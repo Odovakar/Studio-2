@@ -5,6 +5,18 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 import requests
+import pycountry
+
+def alpha2_to_alpha3(alpha_2):
+    if alpha_2 == "XK":  # Handling Kosovo manually
+        return "XKX"  # Commonly used unofficial Alpha-3 code for Kosovo
+    try:
+        country = pycountry.countries.get(alpha_2=alpha_2)
+        return country.alpha_3
+    except AttributeError:
+        print(f"Country code not found: {alpha_2}")  # For debugging
+        return None
+
 
 # Fetching data from github repository
 def fetch_netlist_data(url):
@@ -36,14 +48,17 @@ def fetch_and_transform_json_data(json_raw_data_url):
 
     transformed_data = []
     for country_code, details in json_data.items():
+        # Skip the EU entry
+        if country_code == "EU":
+            continue
         country_data = {"country_code": country_code, **details}
         transformed_data.append(country_data)
 
     json_df = pd.DataFrame(transformed_data)  # Correctly initializing json_df
     json_df['ipv4'] = pd.to_numeric(json_df['ipv4'], errors='coerce')
     json_df['pop'] = pd.to_numeric(json_df['pop'], errors='coerce')
-    json_df = json_df[(json_df['pop'] > 800) & (json_df['name'] != 'World')] 
-    
+    json_df = json_df[(json_df['pop'] > 800) & (json_df['name'] != 'World')]
+
     json_df['log_ipv4'] = np.log10(json_df['ipv4'] + 1)  # Correct reference to json_df
 
     if transformed_data:
@@ -61,6 +76,13 @@ netlist_data_frame = process_netlist_data(netlist_data_frame)
 # JSON ip_alloca data processing calls to data_processing folder script
 json_raw_data_url = 'https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/ip_alloc.json'
 transformed_data, column_defs, json_df = fetch_and_transform_json_data(json_raw_data_url)
+# Convert ISO Alpha-2 codes to ISO Alpha-3 codes in your DataFrame
+json_df['iso_alpha_3'] = json_df['country_code'].apply(alpha2_to_alpha3)
+
+# After creating json_df from the JSON data
+#print(json_df.columns)
+#print(json_df['iso_alpha_3'].unique())
+
 
 # App Initialisation
 app = Dash(__name__)
@@ -76,7 +98,6 @@ def update_map(scale_type):
                      '<extra>Log IPv4: %{customdata[2]:.2f}</extra>'
     
     custom_color_sequence = [
-        # Using more distinct colors to improve distinguishability
         "rgb(233, 30, 99)",   # Pink
         "rgb(76, 175, 80)",   # Green
         "rgb(33, 150, 243)",  # Blue
@@ -90,12 +111,11 @@ def update_map(scale_type):
 
 
     if scale_type == 'log':
-        color = json_df['log_ipv4']
         map_fig = px.choropleth(
             data_frame=json_df,
-            locations='name',
-            locationmode='country names',
-            color=color,
+            locations='iso_alpha_3',  # Use the three-letter ISO codes
+            locationmode='ISO-3',  # Adjust location mode to ISO-3
+            color='log_ipv4',  # Rest of the parameters remain the same...
             color_continuous_scale='viridis',
             range_color=(0, json_df['log_ipv4'].max()),
             projection='equirectangular',
@@ -103,25 +123,33 @@ def update_map(scale_type):
             hover_data={'ipv4': True}
         )
     else:  # Custom Scale
-        bins = [0, 1, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 9999999999]
-        labels = ['0', '1-999', '1000-9999', '10000-99999', '100000-999999', 
-                  '1000000-9999999', '10000000-99999999', '100000000-999999999', '1000000000-9999999999']
+        bins = [0, 10**4, 10**5, 10**6, 10**7, 10**8, 10**9, 1614079580 + 1]
+        labels = [
+            "Under 10K", "10K - 100K", "100K - 1M",
+            "1M - 10M", "10M - 100M", "100M - 1B", "Over 1B"
+        ]
         json_df['ipv4_group'] = pd.cut(json_df['ipv4'], bins=bins, labels=labels, right=False)
         map_fig = px.choropleth(
             data_frame=json_df,
-            locations='name',
-            locationmode='country names',
-            color='ipv4_group',
-            category_orders={"ipv4_group": labels},
-            color_discrete_sequence=custom_color_sequence,
+            locations='iso_alpha_3',
+            locationmode='ISO-3',
+            color='ipv4_group',  # Use the categorization column
+            category_orders={"ipv4_group": labels},  # Ensure the order of categories
+            color_discrete_map={  # Optional: Define a custom color map if desired
+                label: color for label, color in zip(labels, custom_color_sequence)
+            },
             projection='equirectangular',
             hover_name=json_df['name'],
             hover_data={'ipv4': True}
         )
+        #print(json_df['ipv4_group'].unique())
+        # Check for any NaNs or unexpected values in the iso_alpha_3 column
+        print(json_df['iso_alpha_3'].isnull().sum())
+        print(json_df['iso_alpha_3'].unique())
 
     # Configuration shared by both types of scales
     map_fig.update_geos(showframe=False, lonaxis_range=[-180, 180], lataxis_range=[-60, 90])
-    map_fig.update_layout(dragmode=False, hoverlabel=dict(bgcolor='white', font_size=16))
+    map_fig.update_layout(dragmode=False, hoverlabel=dict(bgcolor='white', font_size=16), legend=dict(orientation='h', yanchor='bottom', y=-0.5, xanchor="center", x=0.5))
 
     map_fig.update_layout(
         dragmode=False, # Make the map non-draggable
@@ -164,6 +192,7 @@ scatter_fig = px.scatter(
     size="ipv4"  # Using population for the bubble size
 )
 
+
 # Adjusting the axes to a log scale for better visibility in case of wide range
 scatter_fig.update_xaxes(type='log', title_text='Population Size (Log Scale)')
 scatter_fig.update_yaxes(type='log', title_text='Number of IPv4 Addresses (Log Scale)')
@@ -183,6 +212,7 @@ scale_selector = dcc.Dropdown(
     value='log', 
     style={'width': '50%', 'padding': '20px', 'minWidth': '300px'}
 )
+
 
 # App Layout
 app.layout=html.Div([
