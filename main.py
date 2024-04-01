@@ -7,16 +7,14 @@ import numpy as np
 import requests
 import pycountry
 
+'''--------Data Processing--------'''
+# The data only provided iso-2 codes which aren't usable by px
 def alpha2_to_alpha3(alpha_2):
-    if alpha_2 == "XK":  # Handling Kosovo manually
-        return "XKX"  # Commonly used unofficial Alpha-3 code for Kosovo
     try:
         country = pycountry.countries.get(alpha_2=alpha_2)
         return country.alpha_3
     except AttributeError:
-        print(f"Country code not found: {alpha_2}")  # For debugging
         return None
-
 
 # Fetching data from github repository
 def fetch_netlist_data(url):
@@ -83,31 +81,34 @@ json_df['iso_alpha_3'] = json_df['country_code'].apply(alpha2_to_alpha3)
 #print(json_df.columns)
 #print(json_df['iso_alpha_3'].unique())
 
+'''--------Styling/App/Graph/Figure/Map Initialising--------'''
+#Styling
+external_stylesheets = [dbc.themes.BOOTSTRAP]
 
 # App Initialisation
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 
+# Map Initialisation and Callback function for interactivity and state updating
 @app.callback(
     Output('the-choropleth-map', 'figure'),
     [Input('scale-selector', 'value')]
 )
 def update_map(scale_type):
+    common_bottom_margin = 80  # Common margin for colorbar and map legend
     # Creating a template for the hoverlabel
     hover_template = '<b>%{customdata[1]}</b><br>' + \
                      'IPv4: %{customdata[0]:,.0f}<br>' + \
                      '<extra>Log IPv4: %{customdata[2]:.2f}</extra>'
-    
-    custom_color_sequence = [
-        "rgb(233, 30, 99)",   # Pink
-        "rgb(76, 175, 80)",   # Green
-        "rgb(33, 150, 243)",  # Blue
-        "rgb(255, 235, 59)",  # Yellow
-        "rgb(156, 39, 176)",  # Purple
-        "rgb(255, 87, 34)",   # Deep Orange
-        "rgb(0, 188, 212)",   # Cyan
-        "rgb(96, 125, 139)",  # Blue Grey
-        "rgb(255, 152, 0)"    # Orange
-    ]
+
+    colors = {
+        '< 10K': 'rgb(71, 203, 255)',
+        '10K - 100K': 'rgb(95, 187, 255)',
+        '100K - 1M': 'rgb(140, 166, 255)',
+        '1M - 10M': 'rgb(187, 138, 255)',
+        '10M - 100M': 'rgb(226, 104, 220)',
+        '100M - 1B': 'rgb(251, 63, 168)',
+        '> 1B': 'rgb(255, 25, 106)'
+    }   
 
 
     if scale_type == 'log':
@@ -145,11 +146,11 @@ def update_map(scale_type):
         #print(json_df['ipv4_group'].unique())
         # Check for any NaNs or unexpected values in the iso_alpha_3 column
         print(json_df['iso_alpha_3'].isnull().sum())
-        print(json_df['iso_alpha_3'].unique())
+        #print(json_df['iso_alpha_3'].unique())
 
     # Configuration shared by both types of scales
     map_fig.update_geos(showframe=False, lonaxis_range=[-180, 180], lataxis_range=[-60, 90])
-    map_fig.update_layout(dragmode=False, hoverlabel=dict(bgcolor='white', font_size=16), legend=dict(orientation='h', yanchor='bottom', y=-0.5, xanchor="center", x=0.5))
+    map_fig.update_layout(dragmode=False, hoverlabel=dict(bgcolor='white', font_size=16))
 
     map_fig.update_layout(
         dragmode=False, # Make the map non-draggable
@@ -215,11 +216,30 @@ scale_selector = dcc.Dropdown(
 
 
 # App Layout
-app.layout=html.Div([
-    dbc.Row(dbc.Col(scale_selector, width={'size': 4, 'offset': 4})),
-    dbc.Row(dbc.Col(html.H1("IPv4 Allocation Data", style={'textAlign': 'center'}), width=12)),
+app.layout = html.Div([
+    dbc.Row(
+        [
+            # Empty column to take up 1/3 of the screen space
+            dbc.Col(width=4),
+            # Header centered within its column, 4/12 spaces
+            dbc.Col(html.H1('IPv4 Allocation Data', className='text-center'), width=4),
+            # Dropdown aligned right, 4/12 spaces
+            dbc.Col(dcc.Dropdown(
+                id='scale-selector',
+                options=[
+                    {'label': 'Logarithmic Scale', 'value': 'log'},
+                    {'label': 'Custom Scale', 'value': 'custom'}
+                ],
+                value='log',
+                clearable=False,
+            ), width=4, className='justify-content-end'),
+        ],
+        className='align-items-center',  # Vertically align the columns if they wrap on smaller screens
+    ),
+    dbc.Row(
+        dbc.Col(dcc.Graph(id='the-choropleth-map'), width=12)
+    ),
     dbc.Row([
-        dbc.Col(dcc.Graph(id='the-choropleth-map'), width=12),  # This will display the choropleth map
         dbc.Col(dcc.Graph(id='the-scatter-plot', figure=scatter_fig), width=12)  # This displays the scatter plot
     ]),
     html.H1("JSON Data in AgGrid", style={'textAlign': 'center'}),
