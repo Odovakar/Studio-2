@@ -112,7 +112,7 @@ transformed_data, column_defs, json_df = fetch_and_transform_json_data(json_raw_
 #unknown_rir_orig = json_df.loc[json_df['RIR'] == 'Unknown']
 #print("Original DataFrame with Unknown RIR:")
 #print(unknown_rir_orig[['country_code','iso_alpha_3', 'name', 'RIR']])
-print(json_df['percentv4'].dtype)
+#print(json_df['percentv4'].dtype)
 
 # Fetching Data for Hoverlabel
 customdata = np.stack((

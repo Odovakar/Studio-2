@@ -96,7 +96,7 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
     [Input('scale-selector', 'value')]
 )
 def update_map(scale_type):
-    common_bottom_margin = 80  # Adjust this value as needed
+    common_bottom_margin = 80
 
     customdata = np.stack((
         json_df['name'],          # Country name
@@ -128,7 +128,7 @@ def update_map(scale_type):
             hover_name='name',
             hover_data={
                 'ipv4': ':,.0f',
-                'iso_alpha_3': False,  # This correctly excludes the iso_alpha_3 field from hover data
+                'iso_alpha_3': False,
                 'pop': ':,.0f',
                 'percentv4': ':.2f',
                 'pcv4': ':.2f',

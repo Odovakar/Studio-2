@@ -234,7 +234,7 @@ app.layout = html.Div([
                 clearable=False,
             ), width=4, className='justify-content-end'),
         ],
-        className='align-items-center',  # Vertically align the columns if they wrap on smaller screens
+        className='align-items-center',
     ),
     dbc.Row(
         dbc.Col(dcc.Graph(id='the-choropleth-map'), width=12)

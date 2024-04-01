@@ -234,8 +234,8 @@ def update_scatter_plot(scale_type):
     def get_axis_type(scale_type):
         # Adjust axes based on the scale type
         if scale_type == 'grouped':
-            # For the grouped scale, set custom tick labels for y-axis
-            scatter_fig.update_yaxes(type='log',  # Assuming log scale for better visibility
+            # For the grouped scale, custom tick labels for y-axis
+            scatter_fig.update_yaxes(type='log',  # Log scale for better visibility
                                     tickvals=list(ipv4_group_to_ticks.values()),
                                     ticktext=list(ipv4_group_to_ticks.keys()))
         else:
@@ -279,9 +279,9 @@ def update_scatter_plot(scale_type):
             size_max=60,
             title='Population Size vs. Number of IPv4 Addresses by Country',
             labels={"pop": "Population Size", "ipv4": "Number of IPv4 Addresses"},
-            log_x=True,  # Keep X-axis logarithmic for population size
-            log_y=(scale_type == 'log'),  # Conditionally set Y-axis to logarithmic based on scale selection
-            color_discrete_map=get_colorscale(scale_type)  # Assuming this returns an appropriate color map
+            log_x=True,
+            log_y=(scale_type == 'log'),
+            color_discrete_map=get_colorscale(scale_type)
         )
         # Highlight significant outliers (e.g., USA) with annotations if needed
         if 'USA' in json_df['iso_alpha_3'].values:
