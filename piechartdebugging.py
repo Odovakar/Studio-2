@@ -179,6 +179,25 @@ def calculate_rir_percentages(df):
     rir_percentages = df.groupby('RIR')['percentv4'].sum().reset_index()
     return rir_percentages
 
+def calculate_rir_country_data(df, selected_value):
+    if selected_value == 'ARIN':
+        arin_data = df[df['RIR'] == 'ARIN']
+        return arin_data
+    elif selected_value == 'APNIC':
+        apnic_data = df[df['RIR'] == 'APNIC']
+        return apnic_data
+    elif selected_value == 'RIPENCC':
+        ripencc_data = df[df['RIR'] == 'RIPE NCC']
+        return ripencc_data
+    elif selected_value == 'LACNIC':
+        lacnic_data = df[df['RIR'] == 'LACNIC']
+        return lacnic_data
+    elif selected_value == 'AFRINIC':
+        afrinic_data = df[df['RIR'] == 'AFRINIC']
+        return afrinic_data
+    else:
+        return None
+
 '''----------pie stuff----------'''
 @app.callback(
     Output('the-pie-figure', 'figure'),
@@ -216,6 +235,61 @@ def update_pie_figure(selected_value):
             margin=dict(t=50, b=50, l=50, r=50),
         )
         return pie_fig
+    elif selected_value == 'ARIN':
+        arin_data = calculate_rir_country_data(json_df, 'ARIN')
+        if arin_data is not None:
+            pie_fig = px.pie(
+                data_frame=arin_data,
+                values='percentv4',
+                names='name',
+            )
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
+            return pie_fig
+    elif selected_value == 'APNIC':
+        apnic_data = calculate_rir_country_data(json_df, 'APNIC')
+        if apnic_data is not None:
+            pie_fig = px.pie(
+                data_frame=apnic_data,
+                values='percentv4',
+                names='name',
+            )
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
+            return pie_fig
+    elif selected_value == 'RIPENCC':
+        ripencc_data = calculate_rir_country_data(json_df, 'RIPENCC')
+        if ripencc_data is not None:
+            pie_fig = px.pie(
+                data_frame=ripencc_data,
+                values='percentv4',
+                names='name',
+            )
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
+            return pie_fig
+    elif selected_value == 'LACNIC':
+        lacnic_data = calculate_rir_country_data(json_df, 'LACNIC')
+        if lacnic_data is not None:
+            pie_fig = px.pie(
+                data_frame=lacnic_data,
+                values='percentv4',
+                names='name',
+            )
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
+            return pie_fig
+    elif selected_value == 'AFRINIC':
+        afrinic_data = calculate_rir_country_data(json_df, 'AFRINIC')
+        if afrinic_data is not None:
+            pie_fig = px.pie(
+                data_frame=afrinic_data,
+                values='percentv4',
+                names='name',
+            )
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
+            return pie_fig
 
 
 ipv4_group_to_ticks = {
@@ -269,9 +343,9 @@ app.layout = html.Div([
             # Dropdown aligned right, 4/12 spaces
             dbc.Col(dcc.Dropdown(
                 id='scale-selector',
-                options=[
-                    {'label': 'Logarithmic Scale', 'value': 'log'},
-                    {'label': 'Grouped Scale', 'value': 'grouped'}
+                options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
+                    {'label': 'Normal Visualisation', 'value': 'normal'},
+                    {'label': 'Logarithmic Visualisation', 'value': 'log'}
                 ],
                 value='log',
                 clearable=False,
@@ -285,12 +359,17 @@ app.layout = html.Div([
             id='pie_selector',
             options=[
                 {'label': 'Total Pool', 'value': 'TotalPool'},
-                {'label': 'RIR', 'value': 'RIR'}
+                {'label': 'RIR', 'value': 'RIR'},
+                {'label': 'ARIN', 'value': 'ARIN'},
+                {'label': 'APNIC', 'value': 'APNIC'},
+                {'label': 'RIPE NCC', 'value': 'RIPENCC'},
+                {'label': 'LACNIC', 'value': 'LACNIC'},
+                {'label': 'AFRINIC', 'value': 'AFRINIC'}
             ],
             value='TotalPool',  # Default value
             labelStyle={'display': 'inline-block'}
         )
-    ], width={'size': 2, 'offset': 1}, className='text-center'),
+    ], width={'size': 12}, className='text-center'),
     ]),
     dbc.Row(
         dbc.Col(dcc.Graph(id='the-pie-figure'), width=12)
