@@ -135,13 +135,23 @@ netlist_url = 'https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/netl
 netlist_df = fetch_netlist_data(netlist_url)
 netlist_df = process_netlist_data(netlist_df)
 
-afrinic_url = 'https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest'
+'''----------whois ipv4 data----------'''
+def fetch_whois_ipv4_data(whois_ipv4_url):
+    whois_ipv4_df = pd.read_csv(whois_ipv4_url)
+    #print(whois_ipv4_df) THis works
+    return whois_ipv4_df
 
-def fetch_afrinic_data(afrinic_url):
-    response = requests(afrinic_url)
-    lines = response.text.strip().split('\n')
+def process_whois_ipv4_data(whois_ipv4_df):
+    whois_ipv4_df['Date'] = pd.to_datetime(whois_ipv4_df['Date'], format='%Y%m%d')
+    whois_ipv4_df['Value'] = pd.to_numeric(whois_ipv4_df['Value'], errors='coerce').fillna(0).astype(int)
+    return whois_ipv4_df
+
+whois_ipv4_url = 'https://raw.githubusercontent.com/Odovakar/Studio-2/main/ipv4_allocations.csv'
+whois_ipv4_df = fetch_whois_ipv4_data(whois_ipv4_url)
+whois_ipv4_df = process_whois_ipv4_data(whois_ipv4_df)
 
 #print(netlist_df)
+print(whois_ipv4_df)
 
 '''stuff for bug squashing'''
 #print("json_df columns:", json_df.columns.tolist())
@@ -220,6 +230,12 @@ def format_netlist_data_for_aggrid(df):
     formatted_df['Nr of IPs'] = formatted_df['Nr of IPs'].apply(lambda x: "{:,.0f}".format(x))
     return formatted_df.to_dict('records')
 
+def format_whois4_data_for_aggrid(df):
+    formatted_df = df.copy()
+    formatted_df['Start'] = formatted_df['Start'].apply(lambda x: "{:,.0f}".format(x))
+    return formatted_df.to_dict('records')
+
+
 # Calculating percentages for RIR display on the pie chart
 # AFRINIC APNIC ARIN LACNIC RIPE NCC
 def calculate_rir_percentages(df):
@@ -268,7 +284,8 @@ def update_pie_figure(selected_value, dataset_selector):
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
             return pie_fig
         elif dataset_selector=='WHOIS':
-            pie_fig = generate_pie_figure(netlist_df, 'Nr of IPs', 'RIR')
+            formatted_whois4_df = format_whois4_data_for_aggrid(whois_ipv4_df)
+            pie_fig = generate_pie_figure(formatted_whois4_df, 'Value', 'Registry')
             pie_fig.update_traces(textposition='inside')
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
             return pie_fig
@@ -281,7 +298,7 @@ def update_pie_figure(selected_value, dataset_selector):
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
             return pie_fig
         elif dataset_selector=='WHOIS':
-            pie_fig = generate_pie_figure(netlist_df, 'Nr of IPs', 'RIR')
+            pie_fig = generate_pie_figure(whois_ipv4_df, 'Start', 'Registry')
             pie_fig.update_layout(
                 legend=dict(
                     title="IPv4 Groups",
@@ -295,21 +312,6 @@ def update_pie_figure(selected_value, dataset_selector):
                 margin=dict(t=50, b=50, l=50, r=50),
             )
             return pie_fig
-        # pie_fig = generate_pie_figure(rir_percentages, 'percentv4', 'RIR')
-        # pie_fig.update_traces(textposition='inside')
-        # pie_fig.update_layout(
-        #     legend=dict(
-        #         title="IPv4 Groups",
-        #         orientation="h",
-        #         x=0.5,
-        #         xanchor="center",
-        #         y=-0.25,
-        #         yanchor="bottom",
-        #         itemsizing="constant"
-        #     ),
-        #     margin=dict(t=50, b=50, l=50, r=50),
-        # )
-        # return pie_fig
     elif selected_value == 'ARIN':
         arin_data = calculate_rir_country_data(json_df, 'ARIN')
         if arin_data is not None:
@@ -386,17 +388,27 @@ def update_columns(selected_value):
             # This is just a placeholder to illustrate the approach
         ]
         return row_data, column_defs
+    # elif selected_value=='WHOIS':
+    #     column_defs = [
+    #         {'field': 'Start', 'headerName': 'Start', 'sortable': True, 'filter': True, 'width': 150, 'flex': 1},
+    #         {'field': 'End', 'headerName': 'End', 'sortable': True, 'filter': True, 'width': 130, 'flex': 1},
+    #         {'field': 'Nr of IPs', 'headerName': 'Nr of IPs', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
+    #         {'field': 'RIR', 'headerName': 'RIR', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
+    #         {'field': 'Status', 'headerName': 'Status', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
+    #         {'field': 'IP Address', 'headerName': 'IP Address', 'sortable': True, 'filter': True, 'width': 90, 'flex': 1},
+    #         {'field': 'Prefix', 'headerName': 'Prefix', 'sortable': True, 'filter': True, 'width': 80, 'flex': 1},
+    #     ]
+    #     return netlist_row_data, column_defs
     elif selected_value=='WHOIS':
         column_defs = [
-            {'field': 'Start', 'headerName': 'Start', 'sortable': True, 'filter': True, 'width': 150, 'flex': 1},
-            {'field': 'End', 'headerName': 'End', 'sortable': True, 'filter': True, 'width': 130, 'flex': 1},
+            {'field': 'Registry', 'headerName': 'Registry', 'sortable': True, 'filter': True, 'width': 150, 'flex': 1},
+            {'field': 'C', 'headerName': 'End', 'sortable': True, 'filter': True, 'width': 130, 'flex': 1},
             {'field': 'Nr of IPs', 'headerName': 'Nr of IPs', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
             {'field': 'RIR', 'headerName': 'RIR', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
             {'field': 'Status', 'headerName': 'Status', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
             {'field': 'IP Address', 'headerName': 'IP Address', 'sortable': True, 'filter': True, 'width': 90, 'flex': 1},
             {'field': 'Prefix', 'headerName': 'Prefix', 'sortable': True, 'filter': True, 'width': 80, 'flex': 1},
         ]
-        return netlist_row_data, column_defs
 
 
 '''----------Render the application----------'''    
