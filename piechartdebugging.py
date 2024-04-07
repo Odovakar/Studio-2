@@ -83,7 +83,12 @@ def enhance_dataframe(json_df):
     json_df['ipv4_grouping'] = json_df['ipv4'].apply(assign_ipv4_grouping) # Creating grouping for the grouped scale
     json_df['RIR'] = json_df['iso_alpha_3'].apply(alpha3_to_rir) # Adding a 
     json_df['log_ipv4'] = np.log10(json_df['ipv4'] + 1)
+    json_df['log_percentv4'] = np.log10(json_df['percentv4'] + 1) # This creates the column from the get go.
     return json_df
+
+# def create_log_percentv4_column(data_frame):
+#     data_frame['log_percentv4'] = np.log10(data_frame['percentv4'] + 1)
+#     return data_frame
 
 # Column definitions for ag-grid
 def generate_column_definitions(json_df):
@@ -98,10 +103,45 @@ def fetch_and_transform_json_data(json_raw_data_url):
     column_defs = generate_column_definitions(json_df)
     return transformed_data, column_defs, json_df
 
-
 # JSON ip_alloca data processing calls to data_processing folder script
 json_raw_data_url = 'https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/ip_alloc.json'
 transformed_data, column_defs, json_df = fetch_and_transform_json_data(json_raw_data_url)
+
+'''----------Netlist Data Processing----------'''
+# Fetching data from github repository
+def fetch_netlist_data(url):
+    response = requests.get(url)
+    lines = response.text.strip().split("\n")
+    data = [line.split(maxsplit=3) for line in lines if line]
+    netlist_df = pd.DataFrame(data, columns=['Start', 'End', 'RIR', 'Description'])
+    return netlist_df
+
+# Function to tidy up and better granularity of the netlist data
+def process_netlist_data(netlist_df):
+    # Splitting Description column into multiple columns
+    netlist_df[['Status', 'IP']] = netlist_df['Description'].str.split(n=1, expand=True)
+    # Further split IP column into IP address and Prefix columns
+    netlist_df[['IP Address', 'Prefix']] = netlist_df['IP'].str.split("/", expand=True)
+    # Dropping unnecessary columns
+    netlist_df.drop(columns=['Description', 'IP'], inplace=True)
+    # Convert 'Start' and 'End' columns to UInt64
+    netlist_df['Start'] = netlist_df['Start'].astype('UInt64')
+    netlist_df['End'] = netlist_df['End'].astype('UInt64')
+    # Calculate aggregate as the difference between 'End' and 'Start'
+    netlist_df['Nr of IPs'] = netlist_df['End'] - netlist_df['Start']
+    return netlist_df
+
+netlist_url = 'https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/netlist.txt'
+netlist_df = fetch_netlist_data(netlist_url)
+netlist_df = process_netlist_data(netlist_df)
+
+afrinic_url = 'https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest'
+
+def fetch_afrinic_data(afrinic_url):
+    response = requests(afrinic_url)
+    lines = response.text.strip().split('\n')
+
+#print(netlist_df)
 
 '''stuff for bug squashing'''
 #print("json_df columns:", json_df.columns.tolist())
@@ -161,7 +201,7 @@ def get_colorscale(scale_type):
         return colors
 
 # Formatting for the ag-grid
-def format_data_for_aggrid(df):
+def format_json_data_for_aggrid(df):
     formatted_df = df.copy()
 
     # If 'ipv4' is already an integer, format it for display as a string with separators
@@ -171,6 +211,13 @@ def format_data_for_aggrid(df):
     formatted_df['pcv4'] = formatted_df['pcv4'].apply(lambda x: "{:.1f}%".format(x))
     formatted_df['percentv4'] = formatted_df['percentv4'].apply(lambda x: "{:.1f}%".format(x))
 
+    return formatted_df.to_dict('records')
+
+def format_netlist_data_for_aggrid(df):
+    formatted_df = df.copy()
+    formatted_df['Start'] = formatted_df['Start'].apply(lambda x: "{:,.0f}".format(x))
+    formatted_df['End'] = formatted_df['End'].apply(lambda x: "{:,.0f}".format(x))
+    formatted_df['Nr of IPs'] = formatted_df['Nr of IPs'].apply(lambda x: "{:,.0f}".format(x))
     return formatted_df.to_dict('records')
 
 # Calculating percentages for RIR display on the pie chart
@@ -198,95 +245,103 @@ def calculate_rir_country_data(df, selected_value):
     else:
         return None
 
+def generate_pie_figure(data_frame, values, names, **args):
+
+    pie_fig = px.pie(
+        data_frame=data_frame,
+        values=values,
+        names=names
+    )
+    return pie_fig
+
+
 '''----------pie stuff----------'''
 @app.callback(
     Output('the-pie-figure', 'figure'),
-    [Input('pie_selector', 'value')]
+    [Input('pie_selector', 'value'), Input('dataset_selector', 'value')]
 )
-def update_pie_figure(selected_value):
+def update_pie_figure(selected_value, dataset_selector):
     if selected_value=='TotalPool':
-        pie_fig = px.pie(
-            data_frame=json_df,
-            values='percentv4',
-            names='name'
-        )
-        pie_fig.update_traces(textposition='inside')
-        pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
-        return pie_fig
-        
+        if dataset_selector=='IPv4':
+            pie_fig = generate_pie_figure(json_df, 'percentv4', 'name')
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
+            return pie_fig
+        elif dataset_selector=='WHOIS':
+            pie_fig = generate_pie_figure(netlist_df, 'Nr of IPs', 'RIR')
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
+            return pie_fig
+
     elif selected_value=='RIR':
         rir_percentages = calculate_rir_percentages(json_df)
-        pie_fig = px.pie(
-            data_frame=rir_percentages,
-            values='percentv4',
-            names='RIR'
-        )
-        pie_fig.update_traces(textposition='inside')
-        pie_fig.update_layout(
-            legend=dict(
-                title="IPv4 Groups",
-                orientation="h",
-                x=0.5,
-                xanchor="center",
-                y=-0.25,
-                yanchor="bottom",
-                itemsizing="constant"
-            ),
-            margin=dict(t=50, b=50, l=50, r=50),
-        )
-        return pie_fig
+        if dataset_selector=='IPv4':
+            pie_fig = generate_pie_figure(rir_percentages, 'percentv4', 'RIR')
+            pie_fig.update_traces(textposition='inside')
+            pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50),)
+            return pie_fig
+        elif dataset_selector=='WHOIS':
+            pie_fig = generate_pie_figure(netlist_df, 'Nr of IPs', 'RIR')
+            pie_fig.update_layout(
+                legend=dict(
+                    title="IPv4 Groups",
+                    orientation="h",
+                    x=0.5,
+                    xanchor="center",
+                    y=-0.25,
+                    yanchor="bottom",
+                    itemsizing="constant"
+                ),
+                margin=dict(t=50, b=50, l=50, r=50),
+            )
+            return pie_fig
+        # pie_fig = generate_pie_figure(rir_percentages, 'percentv4', 'RIR')
+        # pie_fig.update_traces(textposition='inside')
+        # pie_fig.update_layout(
+        #     legend=dict(
+        #         title="IPv4 Groups",
+        #         orientation="h",
+        #         x=0.5,
+        #         xanchor="center",
+        #         y=-0.25,
+        #         yanchor="bottom",
+        #         itemsizing="constant"
+        #     ),
+        #     margin=dict(t=50, b=50, l=50, r=50),
+        # )
+        # return pie_fig
     elif selected_value == 'ARIN':
         arin_data = calculate_rir_country_data(json_df, 'ARIN')
         if arin_data is not None:
-            pie_fig = px.pie(
-                data_frame=arin_data,
-                values='percentv4',
-                names='name',
-            )
+            pie_fig = generate_pie_figure(arin_data, 'percentv4', 'name')
             pie_fig.update_traces(textposition='inside')
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
             return pie_fig
     elif selected_value == 'APNIC':
         apnic_data = calculate_rir_country_data(json_df, 'APNIC')
         if apnic_data is not None:
-            pie_fig = px.pie(
-                data_frame=apnic_data,
-                values='percentv4',
-                names='name',
-            )
+            pie_fig = generate_pie_figure(apnic_data, 'percentv4', 'name')
             pie_fig.update_traces(textposition='inside')
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
             return pie_fig
     elif selected_value == 'RIPENCC':
         ripencc_data = calculate_rir_country_data(json_df, 'RIPENCC')
         if ripencc_data is not None:
-            pie_fig = px.pie(
-                data_frame=ripencc_data,
-                values='percentv4',
-                names='name',
-            )
+            pie_fig = generate_pie_figure(ripencc_data, 'percentv4', 'name')
             pie_fig.update_traces(textposition='inside')
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
             return pie_fig
     elif selected_value == 'LACNIC':
         lacnic_data = calculate_rir_country_data(json_df, 'LACNIC')
         if lacnic_data is not None:
-            pie_fig = px.pie(
-                data_frame=lacnic_data,
-                values='percentv4',
-                names='name',
-            )
+            pie_fig = generate_pie_figure(lacnic_data, 'percentv4', 'name')
             pie_fig.update_traces(textposition='inside')
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
             return pie_fig
     elif selected_value == 'AFRINIC':
         afrinic_data = calculate_rir_country_data(json_df, 'AFRINIC')
         if afrinic_data is not None:
-            pie_fig = px.pie(
-                data_frame=afrinic_data,
-                values='percentv4',
-                names='name',
-            )
+            pie_fig = generate_pie_figure(afrinic_data, 'percentv4', 'name')
             pie_fig.update_traces(textposition='inside')
             pie_fig.update_layout(showlegend=False, margin=dict(t=50, b=50, l=50, r=50))
             return pie_fig
@@ -305,14 +360,15 @@ ipv4_group_to_ticks = {
 '''----------ag-grid----------'''
 @app.callback(
     [Output('the-ag-grid', 'rowData'), Output('the-ag-grid', 'columnDefs')],
-    [Input('ipv_selector', 'value')]
+    [Input('dataset_selector', 'value')]
 )
 def update_columns(selected_value):
-    row_data = format_data_for_aggrid(json_df)
+    row_data = format_json_data_for_aggrid(json_df)
+    netlist_row_data =  format_netlist_data_for_aggrid(netlist_df)
     #print("Callback triggered, selected value:", selected_value)  # Debug print
-    #test_formatted_data = format_data_for_aggrid(json_df.head())
+    #test_formatted_data = format_json_data_for_aggrid(json_df.head())
     #print(test_formatted_data)
-    if selected_value == 'IPv4':  
+    if selected_value=='IPv4':  
         column_defs = [
             {'field': 'name', 'headerName': 'Country', 'sortable': True, 'filter': True, 'width': 150, 'flex': 1},
             {'field': 'ipv4', 'headerName': 'Nr of Addresses', 'sortable': True, 'filter': True, 'width': 130, 'flex': 1},
@@ -323,13 +379,25 @@ def update_columns(selected_value):
             {'field': 'log_ipv4', 'headerName': 'IPv4 Log', 'sortable': True, 'filter': True, 'width': 80, 'flex': 1},
         ]
         return row_data, column_defs
-    else:  # Assuming IPv6 data exists and is similarly structured
+    elif selected_value=='IPv6':  # Assuming IPv6 data exists and is similarly structured
         column_defs = [
             {'field': 'name', 'headerName': 'Country', 'sortable': True, 'filter': True},
             # Define the rest according to your IPv6 data structure
             # This is just a placeholder to illustrate the approach
         ]
         return row_data, column_defs
+    elif selected_value=='WHOIS':
+        column_defs = [
+            {'field': 'Start', 'headerName': 'Start', 'sortable': True, 'filter': True, 'width': 150, 'flex': 1},
+            {'field': 'End', 'headerName': 'End', 'sortable': True, 'filter': True, 'width': 130, 'flex': 1},
+            {'field': 'Nr of IPs', 'headerName': 'Nr of IPs', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
+            {'field': 'RIR', 'headerName': 'RIR', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
+            {'field': 'Status', 'headerName': 'Status', 'sortable': True, 'filter': True, 'width': 100, 'flex': 1},
+            {'field': 'IP Address', 'headerName': 'IP Address', 'sortable': True, 'filter': True, 'width': 90, 'flex': 1},
+            {'field': 'Prefix', 'headerName': 'Prefix', 'sortable': True, 'filter': True, 'width': 80, 'flex': 1},
+        ]
+        return netlist_row_data, column_defs
+
 
 '''----------Render the application----------'''    
 # App Layout
@@ -377,10 +445,11 @@ app.layout = html.Div([
     dbc.Row([
     dbc.Col([
         dcc.RadioItems(
-            id='ipv_selector',
+            id='dataset_selector',
             options=[
                 {'label': 'IPv4', 'value': 'IPv4'},
-                {'label': 'IPv6', 'value': 'IPv6'}
+                {'label': 'IPv6', 'value': 'IPv6'},
+                {'label': 'WHOIS', 'value': 'WHOIS'}
             ],
             value='IPv4',  # Default value
             labelStyle={'display': 'inline-block'}
