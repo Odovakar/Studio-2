@@ -1,5 +1,16 @@
 import pandas as pd
 import requests
+import pycountry
+
+# Function to convert alpha-2 to alpha-3 country codes
+def alpha2_to_alpha3(alpha_2):
+    if alpha_2 == 'XK':
+        return 'XKX'
+    try:
+        country = pycountry.countries.get(alpha_2=alpha_2)
+        return country.alpha_3
+    except AttributeError:
+        return 'Unknown'
 
 # URLs for the extended delegation files of the five RIRs
 rir_urls = {
@@ -15,6 +26,10 @@ def fetch_and_process_rir_data(url):
     lines = response.text.strip().split("\n")
     data = [line.split("|") for line in lines if line.count('|') >= 7]
     df = pd.DataFrame(data, columns=['Registry', 'Country', 'Type', 'Start', 'Value', 'Date', 'Status', 'Extensions'])
+    
+    # Convert 'Country' from alpha-2 to alpha-3
+    df['Country'] = df['Country'].apply(alpha2_to_alpha3)
+    
     df['Value'] = df['Value'].astype(int)
     df['Date'] = pd.to_datetime(df['Date'], format='%Y%m%d', errors='coerce')
     return df
