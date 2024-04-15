@@ -1,0 +1,132 @@
+import plotly.express as px
+import pandas as pd
+import numpy as np
+
+class ChoroplethHandler:
+    def __init__ (self, data_handler, hover_template_handler):
+        self.data_handler = data_handler
+        self.hover_template_handler = hover_template_handler
+
+    def get_hovertemplate(self, scale_type):
+        if scale_type=='grouped':
+            hover_template='<b>%{customdata[0]}</b><br>' + \
+                        'IPv4: %{customdata[1]:,.0f}<br>' + \
+                        'Population: %{customdata[2]:,.0f}<br>' + \
+                        'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
+                        'IPv4 per Cap: %{customdata[4]:.2f}%' + \
+                        '<extra>IPv4 Grouping: %{customdata[6]}</extra>'
+            return hover_template
+        elif scale_type=='log':
+            hover_template='<b>%{customdata[0]}</b><br>' + \
+                        'IPv4: %{customdata[1]:,.0f}<br>' + \
+                        'Population: %{customdata[2]:,.0f}<br>' + \
+                        'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
+                        'IPv4 per Cap: %{customdata[4]:.2f}%' + \
+                        '<extra>Log IPv4: %{customdata[7]:.2f}</extra>'
+            return hover_template
+
+    # Color scale in function for easier code reusability -- Might add some more conditionals later when scaling for other graphs
+    def get_colorscale(self, scale_type):
+        if scale_type == 'normal':
+            colors = {
+                '0-10K': 'rgb(15, 246, 228)',
+                '10K-100K': 'rgb(0, 229, 255)',
+                '100K-1M': 'rgb(0, 208, 255)',
+                '1M-10M': 'rgb(86, 187, 255)',
+                '10M-100M': 'rgb(141, 160, 255)',
+                '100M-1B': 'rgb(207, 104, 255)',
+                '1B+': 'rgb(250, 0, 196)'
+            }
+            return colors
+    def generate_figure(self, scale_type):
+        common_bottom_margin = 80 # Shared margin for colorbar and legend
+        hover_template = self.hover_template_handler.get_hover_template(scale_type)
+
+        customdata = np.stack((
+            self.data_handler.json_df['name'],          # Country name
+            self.data_handler.json_df['ipv4'],          # IPv4 address count
+            self.data_handler.json_df['pop'],           # Population size
+            self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
+            self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
+            #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
+        ), axis=-1)
+
+        # Choosing map-type based on value selected in dropdown menu
+        if scale_type=='normal':
+            # Generate the choropleth map
+            colors=self.get_colorscale(scale_type)
+            hover_template = self.hover_template_handler.get_hover_template(scale_type)
+
+            map_fig = px.choropleth(
+                data_frame=self.data_handler.json_df,
+                locations='iso_alpha_3',
+                color='ipv4_grouping',
+                hover_name='name',
+                color_discrete_map=colors,
+                locationmode='ISO-3',
+                hover_data={
+                    'name': True,
+                    'ipv4': ':,.0f',
+                    'pop': ':,.0f',
+                    'percentv4': ':.2f',
+                    'pcv4': ':.2f',
+                    'iso_alpha_3': False,
+                    'ipv4_grouping': True,
+                    'log_ipv4': False
+                }
+            )
+            map_fig.update_layout(
+                legend=dict(
+                    title="IPv4 Groups",
+                    orientation="h",
+                    x=0.5,
+                    xanchor="center",
+                    y=-0.1,
+                    yanchor="bottom",
+                    itemsizing="constant"
+                ),
+                margin={"r":20, "t":20, "l":20, "b":common_bottom_margin}
+            )
+            map_fig.update_traces(hovertemplate=hover_template)
+        elif scale_type=='log':
+            # Generate the choropleth map
+            hover_template = self.hover_template_handler.get_hover_template(scale_type)
+            map_fig = px.choropleth(
+                data_frame=self.data_handler.json_df,
+                locations='iso_alpha_3',
+                color='log_ipv4',
+                hover_name='name',
+                color_continuous_scale=px.colors.sequential.Viridis,
+                range_color=[self.data_handler.json_df['log_ipv4'].min(), self.data_handler.json_df['log_ipv4'].max()],
+                locationmode='ISO-3',
+                hover_data={
+                    'name': True,
+                    'ipv4': ':,.0f',
+                    'pop': ':,.0f',
+                    'percentv4': ':.2f',
+                    'pcv4': ':.2f',
+                    'iso_alpha_3': False,
+                    'ipv4_grouping': False,
+                    'log_ipv4': True
+                }
+            )
+            map_fig.update_layout(
+                coloraxis_colorbar=dict(
+                    title="Log IPv4",
+                    orientation="h",
+                    x=0.5,
+                    xanchor="center",
+                    y=-0.1,
+                    yanchor="bottom",
+                    thicknessmode="pixels",
+                    thickness=20,
+                    len=0.8  # Adjusts the length of the colorbar to 80% of the axis length
+                ),
+                margin={"r":20, "t":20, "l":20, "b":common_bottom_margin}
+            )
+            map_fig.update_traces(hovertemplate=hover_template)
+
+        map_fig.update_geos(showframe=False, projection_type='equirectangular', lonaxis_range=[-180, 180], lataxis_range=[-60, 90])
+        map_fig.update_layout(autosize=True)
+
+        return map_fig
