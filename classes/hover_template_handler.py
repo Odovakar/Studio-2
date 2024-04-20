@@ -20,5 +20,15 @@ class HoverTemplateHandler:
                         '<extra>Log IPv4: %{customdata[7]:.2f}</extra>'
             return hover_template
     
-    def get_pie_hover_template(self, selected_value):
-        pass
+    def get_pie_hover_template(self, selected_value, customdata):
+        if selected_value=='TotalPool':
+            hover_template='<b>%{customdata[0]}</b><br>' + \
+                            'IPv4: %{customdata[1]:,.0f}<br>' + \
+                            'Population: %{customdata[2]:,.0f}<br>' + \
+                            'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
+                            'IPv4 per Cap: %{customdata[4]:.2f}%' + \
+                            '<extra>Log IPv4: %{customdata[7]:.2f}</extra>'
+            return hover_template
+        if selected_value=='WHOIS':
+            hover_template = None
+            return hover_template

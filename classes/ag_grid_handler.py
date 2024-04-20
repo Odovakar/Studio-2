@@ -80,5 +80,6 @@ class AgGridHandler:
                 {'field': 'Type', 'headerName': 'Type', 'sortable': True, 'filter': True},
                 {'field': 'Value', 'headerName': 'Value', 'sortable': True, 'filter': True},
                 {'field': 'Date', 'headerName': 'Date', 'sortable': True, 'filter': True},
-                {'field': 'Status', 'headerName': 'Status', 'sortable': True, 'filter': True}
+                {'field': 'Status', 'headerName': 'Status', 'sortable': True, 'filter': True},
+                {'field': 'Prefix', 'headerName': 'Prefix', 'sortable': True, 'filter': True},
             ]

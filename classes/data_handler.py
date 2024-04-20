@@ -2,16 +2,18 @@ import requests
 import pandas as pd
 import numpy as np
 import pycountry
+import wbdata
+from datetime import datetime
 from io import StringIO
 
 class DataHandler:
-    def __init__(self, json_url, netlist_url, whois_ipv4_url):
+    def __init__(self, json_url, whois_v4_pop_csv, population_csv): #netlist_url, 
         self.json_url = json_url
-        self.netlist_url = netlist_url
-        self.whois_ipv4_url = whois_ipv4_url
+        self.whois_v4_pop_csv = whois_v4_pop_csv
+        self.population_csv = population_csv
         self.json_df = None
-        self. netlist_df = None
         self.whois_ipv4_df = None
+
 
     def fetch_json_data(self):
         response = requests.get(self.json_url)
@@ -26,32 +28,60 @@ class DataHandler:
         else:
             print("Failed to fetch data: HTTP", response.status_code)
 
-    def fetch_netlist_data(self):
-        response = requests.get(self.netlist_url)
-        if response.status_code == 200:
-            lines = response.text.strip().split("\n")
-            data = [line.split(maxsplit=3) for line in lines if line]
-            self.netlist_df = pd.DataFrame(data, columns=['Start', 'End', 'RIR', 'Description'])
-            self.process_netlist_data()
-            if not self.netlist_df.empty:
-                print("Netlist DataFrame processed and populated.")
-            else:
-                print("Netlist DataFrame is empty after processing.")
-        else:
-            print("Failed to fetch netlist data: HTTP", response.status_code)
+
+    def load_population_data(self):
+        try:
+            pop_df = pd.read_csv(self.population_csv)
+            # Transforming the DataFrame from wide to long format
+            pop_df_long = pd.melt(pop_df, id_vars=['Country Name', 'Country Code'],
+                                var_name='Year', value_name='Population')
+            # Extracting year and converting to integer, handling NaN values first
+            pop_df_long['Year'] = pop_df_long['Year'].str.extract('(\d{4})')
+            pop_df_long = pop_df_long.dropna(subset=['Year'])  # Dropping rows where 'Year' is NaN
+            pop_df_long['Year'] = pop_df_long['Year'].astype(int)
+
+            return pop_df_long
+        except Exception as e:
+            print(f"Error loading population data: {e}")
+            return None
+    
+    # def fetch_and_process_data_ts(self):
+    #     self.fetch_whois_ipv4_data()
+    #     self.population_data = self.load_population_data()
+        #self.prepare_time_series_data()
+    
+    # def fetch_whois_ipv4_data(self):
+    #     response = requests.get(self.whois_v4_pop_csv)
+    #     if response.status_code == 200:
+    #         data = StringIO(response.text)
+    #         self.whois_ipv4_df = pd.read_csv(data)
+    #         self.process_whois_ipv4_data()
+    #         if not self.whois_ipv4_df.empty:
+    #             print("WHOIS IPv4 DataFrame processed and populated.")
+    #         else:
+    #             print("WHOIS IPv4 DataFrame is empty after processing.")
+    #     else:
+    #         print("Failed to fetch WHOIS IPv4 data: HTTP", response.status_code)
 
     def fetch_whois_ipv4_data(self):
-        response = requests.get(self.whois_ipv4_url)
-        if response.status_code == 200:
-            data = StringIO(response.text)
-            self.whois_ipv4_df = pd.read_csv(data)
-            self.process_whois_ipv4_data()
-            if not self.whois_ipv4_df.empty:
-                print("WHOIS IPv4 DataFrame processed and populated.")
-            else:
-                print("WHOIS IPv4 DataFrame is empty after processing.")
-        else:
-            print("Failed to fetch WHOIS IPv4 data: HTTP", response.status_code)
+        # Attempt to load the CSV data
+        try:
+            self.whois_ipv4_df = pd.read_csv(self.whois_v4_pop_csv)
+            # Optional: Validate that all expected columns are present
+            expected_columns = ['ISO-3', 'Year', 'Registry', 'Type', 'Start', 'Value', 'Date', 'Status', 'Prefix', 'Country', 'Population']
+            if not all(col in self.whois_ipv4_df.columns for col in expected_columns):
+                missing_cols = set(expected_columns) - set(self.whois_ipv4_df.columns)
+                raise ValueError(f"Missing expected columns: {missing_cols}")
+            print("WHOIS IPv4 and population data loaded successfully.")
+        except Exception as e:
+            print(f"Failed to load data: {e}")
+
+    def process_whois_ipv4_data(self):
+        # Example processing steps:
+        self.whois_ipv4_df['Date'] = pd.to_datetime(self.whois_ipv4_df['Date'])
+        print("WHOIS IPv4 data processed successfully.")
+
+
 
     # JSON_DF
     def transform_json_data(self, json_data):
@@ -76,23 +106,13 @@ class DataHandler:
         json_df['log_percentv4'] = np.log10(json_df['percentv4'] + 1)
         return json_df
 
-    # NETLIST_DF
-    def process_netlist_data(self):
-        self.netlist_df[['Status', 'IP']] = self.netlist_df['Description'].str.split(n=1, expand=True)
-        self.netlist_df[['IP Address', 'Prefix']] = self.netlist_df['IP'].str.split("/", expand=True)
-        self.netlist_df.drop(columns=['Description', 'IP'], inplace=True)
-        self.netlist_df['Start'] = self.netlist_df['Start'].astype('UInt64')
-        self.netlist_df['End'] = self.netlist_df['End'].astype('UInt64')
-        self.netlist_df['Nr of IPs'] = self.netlist_df['End'] - self.netlist_df['Start']
 
-    # WHOIS_IPv4
-    def process_whois_ipv4_data(self):
-        #self.whois_ipv4_df['Date'] = pd.to_datetime(self.whois_ipv4_df['Date'], format='%Y%m%d')
-        self.whois_ipv4_df['Date'] = pd.to_datetime(self.whois_ipv4_df['Date'], format='%Y%m%d')
-
-        self.whois_ipv4_df['Date'] = self.whois_ipv4_df['Date'].dt.strftime('%d-%m-%Y')
-        self.whois_ipv4_df['Value'] = pd.to_numeric(self.whois_ipv4_df['Value'], errors='coerce').fillna(0).astype(int)
-        self.whois_ipv4_df['Country'] = self.whois_ipv4_df['Code'].apply(self.alpha3_to_country_name)
+    @staticmethod
+    def calculate_prefix(value):
+        if value == 1:
+            return 32
+        prefix = 32 - int(np.log2(value))
+        return prefix
 
     @staticmethod
     def alpha2_to_alpha3(alpha_2):

@@ -1,6 +1,7 @@
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, html, dcc, Input, Output, State
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import plotly.express as px
 
 from classes.data_handler import DataHandler
 from classes.pie_chart_handler import PieChartHandler
@@ -8,6 +9,7 @@ from classes.ag_grid_handler import AgGridHandler
 from classes.scatter_plot_handler import ScatterHandler
 from classes.choropleth_map_handler import ChoroplethHandler
 from classes.hover_template_handler import HoverTemplateHandler
+from classes.time_series_handler import TimeSeriesHandler
 
 roboto_font_url = "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
 
@@ -16,22 +18,23 @@ external_stylesheets = [dbc.themes.BOOTSTRAP, roboto_font_url]
 # Initialising DataHandler
 data_handler = DataHandler(
     json_url='https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/ip_alloc.json',
-    netlist_url='https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/netlist.txt',
-    whois_ipv4_url='https://raw.githubusercontent.com/Odovakar/Studio-2/main/ipv4_allocations.csv'
+    whois_v4_pop_csv='whois_v4_pop.csv',
+    population_csv='wpopdata.csv'
 )
 
 # Fething the dataframes from the DataHandler class
 data_handler.fetch_json_data()
-data_handler.fetch_netlist_data()
-data_handler.fetch_whois_ipv4_data()
+#data_handler.fetch_netlist_data()
+#data_handler.fetch_whois_ipv4_data()
 
 
 # Instantiating Handlers
 hover_template_handler = HoverTemplateHandler(data_handler)
-pie_chart_handler = PieChartHandler(data_handler) #, hover_template_handler
+pie_chart_handler = PieChartHandler(data_handler, hover_template_handler)
 ag_grid_handler = AgGridHandler(data_handler)
 scatter_plot_handler = ScatterHandler(data_handler)
 choropleth_map_handler = ChoroplethHandler(data_handler, hover_template_handler)
+time_series_handler = TimeSeriesHandler(data_handler)
 
 
 
@@ -106,6 +109,13 @@ def update_columns(selected_value):
     #print(f"Column defs: {column_defs}")
     #print(f"Selected dataset: {selected_value}, Row Data: {row_data}")
     return row_data, column_defs
+
+@app.callback(
+    Output('the-animated-scatter-plot', 'figure'),
+    Input('selected_value', 'value') 
+)
+def update_animated_scatter_plot(selected_value):
+    return time_series_handler.generate_figure(selected_value)
 
 
 @app.callback(
@@ -197,6 +207,24 @@ app.layout = html.Div([
             dashGridOptions={'pagination': True, 'paginationAutoPageSize': True},
         ), width={'size':10, 'offset':1})
     ),
+    dbc.Row([
+        dbc.Col([
+            dcc.Dropdown(
+                id='selected_value',
+                options=[
+                    {'label': 'RIR', 'value': 'rir'},
+                    {'label': 'Global', 'value': 'global'},
+                    ],
+                value='rir',
+            )
+        ]),
+    ]),
+    dbc.Row([
+    dbc.Col([
+        dcc.Graph(id='the-animated-scatter-plot')
+    ])
+    ])
+
 ], className='container-fluid')
 
 if __name__ == '__main__':
