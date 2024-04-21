@@ -76,6 +76,7 @@ class ChoroplethHandler:
                 }
             )
             map_fig.update_layout(
+                autosize=True,
                 legend=dict(
                     title="IPv4 Groups",
                     orientation="h",
@@ -85,7 +86,7 @@ class ChoroplethHandler:
                     yanchor="bottom",
                     itemsizing="constant"
                 ),
-                margin={"r":20, "t":20, "l":20, "b":common_bottom_margin}
+                margin={"r":5, "t":5, "l":5, "b":5}
             )
             map_fig.update_traces(hovertemplate=hover_template)
         elif scale_type=='log':
@@ -111,6 +112,7 @@ class ChoroplethHandler:
                 }
             )
             map_fig.update_layout(
+                autosize=True,
                 coloraxis_colorbar=dict(
                     title="Log IPv4",
                     orientation="h",
@@ -120,9 +122,10 @@ class ChoroplethHandler:
                     yanchor="bottom",
                     thicknessmode="pixels",
                     thickness=20,
-                    len=0.8  # Adjusts the length of the colorbar to 80% of the axis length
+                    len=0.5,  # Adjusts the length of the colorbar to 80% of the axis length
                 ),
-                margin={"r":20, "t":20, "l":20, "b":common_bottom_margin}
+                margin={"r":5, "t":5, "l":5, "b":5}
+
             )
             map_fig.update_traces(hovertemplate=hover_template)
 

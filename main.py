@@ -12,6 +12,7 @@ from classes.choropleth_map_handler import ChoroplethHandler
 from classes.hover_template_handler import HoverTemplateHandler
 from classes.time_series_handler import TimeSeriesHandler
 
+
 roboto_font_url = "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
 
 external_stylesheets = [dbc.themes.BOOTSTRAP, roboto_font_url]
@@ -80,41 +81,41 @@ def update_scatter_plot(scale_type):
 '''----------Pie Chart----------'''
 @app.callback(
     Output('the-pie-figure', 'figure'),
-    [Input('pie-selector', 'value'), Input('dataset_selector', 'value'), Input('toggle-legend-button', 'n_clicks')]
+    [Input('pie-selector', 'value'),
+     Input('ipv4', 'n_clicks'),
+     Input('ipv6', 'n_clicks'),
+     Input('whoisv4', 'n_clicks'),
+     Input('toggle-legend-button', 'n_clicks')],
+    [State('ipv4', 'className'),
+     State('ipv6', 'className'),
+     State('whoisv4', 'className')]
 )
-def update_pie_figure(selected_value, dataset_selector, n_clicks):
-    show_legend = n_clicks % 2 == 1
+def update_pie_figure(selected_value, ipv4_clicks, ipv6_clicks, whoisv4_clicks, toggle_clicks, ipv4_class, ipv6_class, whoisv4_class):
+    ctx = callback_context
+
+    # Default dataset selector to IPv4
+    dataset_selector = 'IPv4'  
+
+    # Identify which button was clicked last
+    if ctx.triggered:
+        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        if button_id == 'ipv4' and 'btn-primary' in ipv4_class:
+            dataset_selector = 'IPv4'
+        elif button_id == 'whoisv4' and 'btn-primary' in whoisv4_class:
+            dataset_selector = 'WHOIS'
+
+    # Determine whether to show the legend
+    show_legend = toggle_clicks % 2 == 1
     opacity = 0.5 if show_legend else 1.0
+
     return pie_chart_handler.generate_figure(dataset_selector, selected_value, show_legend, opacity)
 
-'''----------AG Grid----------'''
-# @app.callback(
-#     [Output('the-ag-grid', 'rowData'), Output('the-ag-grid', 'columnDefs')],
-#     [Input("ipv4", "n_clicks"), Input("ipv6", "n_clicks"), Input("whoisv4", "n_clicks")]
-# )
-# def update_columns(ipv4_clicks, ipv6_clicks, whois_clicks):
-#     ctx = dash.callback_context
-    
-#     # Default action is to set to 'ipv4', assuming it's the default or fallback scenario
-#     if not ctx.triggered:
-#         button_id = 'ipv4'  # Default to 'ipv4' if nothing has been clicked yet
-#     else:
-#         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-#     row_data = []
-#     column_defs = []
 
-#     if button_id == 'ipv4':
-#         row_data = ag_grid_handler.format_json_data_for_aggrid()
-#         column_defs = ag_grid_handler.generate_column_definitions('json')
-#     elif button_id == 'ipv6':
-#         # Define how to handle IPv6 data update if necessary
-#         pass
-#     elif button_id == 'whoisv4':
-#         row_data = ag_grid_handler.format_whois4_data_for_aggrid()
-#         column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
 
-#     return row_data, column_defs
+
+
+
 
 
 @app.callback(
@@ -175,23 +176,28 @@ def update_content_and_styles(ipv4_clicks, ipv6_clicks, whoisv4_clicks):
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
-            dbc.Col(dcc.Dropdown(
-                id='scale-selector',
-                options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
-                    {'label': 'Normal Visualisation', 'value': 'normal'},
-                    {'label': 'Logarithmic Visualisation', 'value': 'log'}
-                ],
-                value='log',
-                clearable=False,
-            )),
-        ])
+            html.Div([
+                dcc.Dropdown(
+                    id='scale-selector',
+                    options=[
+                        {'label': 'Normal Visualisation', 'value': 'normal'},
+                        {'label': 'Logarithmic Visualisation', 'value': 'log'}
+                    ],
+                    value='log',
+                    clearable=False,
+                ),
+            ], style={'height': '67%'}),
+            html.Div([
+                dbc.Card(['This is a Choropleth map containing IPv4 pool data showing population sizes.'], style={'padding': '10px'})
+            ], style={'height': '33%'})
+        ], style={'display': 'flex', 'flexDirection': 'column', 'height': '100%'})
     elif tab == 'tab-2':
         return html.Div([
             dbc.Col(dcc.Dropdown(
                 id='scale-selector',
                 options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
                     {'label': 'Normal Visualisation', 'value': 'normal'},
-                    {'label': 'Logarithmic Visualisation', 'value': 'log'}
+                    {'label': 'Logarithmic Visualisation', 'value': 'log'},
                 ],
                 value='log',
                 clearable=False,
@@ -203,29 +209,53 @@ def render_content(tab):
                 dcc.RadioItems(
                     id='pie-selector',
                     options=[
-                        {'label': html.Div('Total Pool', style={'padding-left': 3}), 'value': 'TotalPool'},
-                        {'label': html.Div('RIR', style={'padding-left': 3}), 'value': 'RIR'},
-                        {'label': html.Div('ARIN', style={'padding-left': 3}), 'value': 'ARIN'},
-                        {'label': html.Div('APNIC', style={'padding-left': 3}), 'value': 'APNIC'},
-                        {'label': html.Div('RIPE NCC', style={'padding-left': 3}), 'value': 'RIPENCC'},
-                        {'label': html.Div('LACNIC', style={'padding-left': 3}), 'value': 'LACNIC'},
-                        {'label': html.Div('AFRINIC', style={'padding-left': 3}), 'value': 'AFRINIC'}
+                        {'label': 'Total Pool', 'value': 'TotalPool'},
+                        {'label': 'RIR', 'value': 'RIR'},
+                        {'label': 'ARIN', 'value': 'ARIN'},
+                        {'label': 'APNIC', 'value': 'APNIC'},
+                        {'label': 'RIPE NCC', 'value': 'RIPENCC'},
+                        {'label': 'LACNIC', 'value': 'LACNIC'},
+                        {'label': 'AFRINIC', 'value': 'AFRINIC'}
                     ],
-                    value='TotalPool',  # Default value
+                    value='TotalPool',
                     labelStyle={'display': 'inline-flex', 'margin-right': '5px'},
                 )
-            ], width={'size': 8, 'offset': 1}, align='center'),
+            ], width={'size': 6, 'offset': 1}),
             dbc.Col([
                 dbc.Button('Toggle Legend', id='toggle-legend-button', color='primary', n_clicks=0)
-            ], width=3, align='center')  # Adjust width and alignment as needed
+            ], width={'size': 4, 'offset': 1})
         ])
     else:
         return html.Div("Select a tab")  # Default message or content
 
+@app.callback(
+    Output('tab-1-info', 'children'),
+    Input('tab-1-dropdown', 'value')
+)
+def update_tab1_info(value):
+    return f"Selected option: {value} in Choropleth Map tab"
+
+@app.callback(
+    Output('tab-2-info', 'children'),
+    Input('tab-2-dropdown', 'value')
+)
+def update_tab2_info(value):
+    return f"Selected option: {value} in Scatter Plot tab"
+
+@app.callback(
+    Output('tab-3-info', 'children'),
+    Input('tab-3-dropdown', 'value')
+)
+def update_tab3_info(value):
+    return f"Selected option: {value} in Pie Figure tab"
+
+
+
+
 '''----------Render the application----------'''    
 # App Layout
 app.layout = html.Div([
-    dbc.Row([
+    dbc.Row([ # SECTION 1
         dbc.Col([  # Column for left-aligned heading
             html.H3('Internet Protocol Allocation Visualisation Model'),
         ], style={'display': 'flex', 'align-items': 'center'}, width={'size': 7, 'offset': 1}),  # Center heading vertically
@@ -239,32 +269,32 @@ app.layout = html.Div([
                 className="mb-3",
             )
         ], className='d-flex justify-content-end align-items-center', width={'size': 3}),  # Align buttons & center vertically
-        dbc.Col([], width={'size': 1})
-    ], style={'height': '10%', 'display': 'flex', 'flex-direction': 'row'}),
-    dbc.Row([
+        dbc.Col([], width={'size': 1}) # Filler to take up 1/12
+    ], style={'height': '5%'}),
+    dbc.Row([ # SECTION 2
         dbc.Col([
-            dbc.Card(id='dynamic-card-content', style={'padding': '10px', 'height': '97%', 'background-color': '#f2f2f2'}),
+            dbc.Card(id='dynamic-card-content', class_name='card', style={'padding': '20px'}),
         ], width={'size': 2, 'offset': 1}),
         dbc.Col([
-        dbc.Card([
-            dbc.CardBody([
-                dcc.Tabs(id='tabs-example', children=[
-                    dcc.Tab(label='Choropleth Map', children=[
-                        dcc.Graph(id='the-choropleth-map')
-                    ]),
-                    dcc.Tab(label='Scatter Plot', children=[
-                        dcc.Graph(id='the-scatter-plot')
-                    ]),
-                    dcc.Tab(label='Pie Figure', children=[
-                        dcc.Graph(id='the-pie-figure')
-                    ]),
-                ])
-            ])
-        ], style={'marginBottom': 20, 'height': '55%'}),
-        ], style={'height': '100%'}),
+            dbc.Card([
+                dbc.CardBody([
+                    dcc.Tabs(id='tabs-example', children=[
+                        dcc.Tab(label='Choropleth Map', children=[
+                            dcc.Graph(id='the-choropleth-map')
+                        ]),
+                        dcc.Tab(label='Scatter Plot', children=[
+                            dcc.Graph(id='the-scatter-plot')
+                        ]),
+                        dcc.Tab(label='Pie Figure', children=[
+                            dcc.Graph(id='the-pie-figure')
+                        ]),
+                    ], className='col-md-6') # Classname sets tab width
+                ], style={'height': '95%'})
+            ], class_name='card'),
+        ]),
         dbc.Col([], width={'size':1})
-    ]),
-    dbc.Row([
+    ], style={'height': '55%'}),
+    dbc.Row([ # SECTION 3
         dbc.Col([
             dbc.Card([
                     dbc.CardBody([
@@ -281,10 +311,10 @@ app.layout = html.Div([
                             style={'height': '100%', 'width': '100%'},
                         )
                     ])
-                ], style={'height': '40%'}),
+                ], class_name='card'),
         ], width={'size': 10, 'offset': 1}),
-    ], style={'height': '90%'}),
-], className='container-fluid', style={'height': '100vh', 'width': '100%'})
+    ], style={'height': '40%'}),
+], style={'height': '98vh', 'width': '100%'})
 
 if __name__ == '__main__':
     app.run_server(debug=True)
