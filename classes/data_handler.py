@@ -64,22 +64,24 @@ class DataHandler:
     #         print("Failed to fetch WHOIS IPv4 data: HTTP", response.status_code)
 
     def fetch_whois_ipv4_data(self):
-        # Attempt to load the CSV data
         try:
-            self.whois_ipv4_df = pd.read_csv(self.whois_v4_pop_csv)
-            # Optional: Validate that all expected columns are present
+            self.whois_ipv4_df = pd.read_csv(self.whois_v4_pop_csv, low_memory=False)
             expected_columns = ['ISO-3', 'Year', 'Registry', 'Type', 'Start', 'Value', 'Date', 'Status', 'Prefix', 'Country', 'Population']
             if not all(col in self.whois_ipv4_df.columns for col in expected_columns):
-                missing_cols = set(expected_columns) - set(self.whois_ipv4_df.columns)
-                raise ValueError(f"Missing expected columns: {missing_cols}")
-            print("WHOIS IPv4 and population data loaded successfully.")
+                raise ValueError("WHOIS IPv4 data missing expected columns.")
+            print("WHOIS IPv4 data loaded successfully.")
         except Exception as e:
-            print(f"Failed to load data: {e}")
+            print(f"Failed to load WHOIS IPv4 data: {e}")
+
 
     def process_whois_ipv4_data(self):
-        # Example processing steps:
-        self.whois_ipv4_df['Date'] = pd.to_datetime(self.whois_ipv4_df['Date'])
-        print("WHOIS IPv4 data processed successfully.")
+        try:
+            self.whois_ipv4_df['Date'] = pd.to_datetime(self.whois_ipv4_df['Date'])
+            self.whois_ipv4_df['Year'] = self.whois_ipv4_df['Year'].astype(int)
+            self.whois_ipv4_df['Population'] = pd.to_numeric(self.whois_ipv4_df['Population'], errors='coerce')
+            print("WHOIS IPv4 data processed successfully.")
+        except Exception as e:
+            print(f"Error processing WHOIS IPv4 data: {e}")
 
 
 

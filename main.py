@@ -1,4 +1,5 @@
-from dash import Dash, html, dcc, Input, Output, State
+import dash
+from dash import Dash, html, dcc, Input, Output, State, callback_context
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import plotly.express as px
@@ -24,8 +25,7 @@ data_handler = DataHandler(
 
 # Fething the dataframes from the DataHandler class
 data_handler.fetch_json_data()
-#data_handler.fetch_netlist_data()
-#data_handler.fetch_whois_ipv4_data()
+data_handler.fetch_whois_ipv4_data()
 
 
 # Instantiating Handlers
@@ -88,27 +88,34 @@ def update_pie_figure(selected_value, dataset_selector, n_clicks):
     return pie_chart_handler.generate_figure(dataset_selector, selected_value, show_legend, opacity)
 
 '''----------AG Grid----------'''
-@app.callback(
-    [Output('the-ag-grid', 'rowData'), Output('the-ag-grid', 'columnDefs')],
-    Input('dataset_selector', 'value')
-)
-def update_columns(selected_value):
-    row_data = []
-    column_defs = []
+# @app.callback(
+#     [Output('the-ag-grid', 'rowData'), Output('the-ag-grid', 'columnDefs')],
+#     [Input("ipv4", "n_clicks"), Input("ipv6", "n_clicks"), Input("whoisv4", "n_clicks")]
+# )
+# def update_columns(ipv4_clicks, ipv6_clicks, whois_clicks):
+#     ctx = dash.callback_context
     
-    if selected_value == 'IPv4':
-        row_data = ag_grid_handler.format_json_data_for_aggrid()
-        column_defs = ag_grid_handler.generate_column_definitions('json')
-    elif selected_value == 'netlist':
-        row_data = ag_grid_handler.format_netlist_data_for_aggrid()
-        column_defs = ag_grid_handler.generate_column_definitions('netlist')
-    elif selected_value == 'WHOIS':
-        row_data = ag_grid_handler.format_whois4_data_for_aggrid()
-        column_defs = ag_grid_handler.generate_column_definitions('WHOIS')
-    #print(f"Row data: {row_data[:5]}")
-    #print(f"Column defs: {column_defs}")
-    #print(f"Selected dataset: {selected_value}, Row Data: {row_data}")
-    return row_data, column_defs
+#     # Default action is to set to 'ipv4', assuming it's the default or fallback scenario
+#     if not ctx.triggered:
+#         button_id = 'ipv4'  # Default to 'ipv4' if nothing has been clicked yet
+#     else:
+#         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+#     row_data = []
+#     column_defs = []
+
+#     if button_id == 'ipv4':
+#         row_data = ag_grid_handler.format_json_data_for_aggrid()
+#         column_defs = ag_grid_handler.generate_column_definitions('json')
+#     elif button_id == 'ipv6':
+#         # Define how to handle IPv6 data update if necessary
+#         pass
+#     elif button_id == 'whoisv4':
+#         row_data = ag_grid_handler.format_whois4_data_for_aggrid()
+#         column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+
+#     return row_data, column_defs
+
 
 @app.callback(
     Output('the-animated-scatter-plot', 'figure'),
@@ -119,113 +126,165 @@ def update_animated_scatter_plot(selected_value):
 
 
 @app.callback(
-    Output('graph-container', 'children'),
-    Input('figure-selector', 'value')
+    [
+        Output("ipv4", "className"),
+        Output("ipv6", "className"),
+        Output("whoisv4", "className"),
+        Output('the-ag-grid', 'rowData'),
+        Output('the-ag-grid', 'columnDefs')
+    ],
+    [
+        Input("ipv4", "n_clicks"),
+        Input("ipv6", "n_clicks"),
+        Input("whoisv4", "n_clicks")
+    ]
 )
-def update_graph_display(selected_graph):
-    if selected_graph == 'choropleth-map':
-        return dbc.Col(dcc.Graph(id='the-choropleth-map'), width=12)
-    elif selected_graph == 'scatter-plot':
-        return dbc.Col(dcc.Graph(id='the-scatter-plot'), width=12)
+def update_content_and_styles(ipv4_clicks, ipv6_clicks, whoisv4_clicks):
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'ipv4'
+    
+    # Default button styles
+    styles = {
+        "ipv4": "btn-outline-primary",
+        "ipv6": "btn-outline-primary",
+        "whoisv4": "btn-outline-primary"
+    }
+
+    # Update the style for the triggered button
+    if triggered_id in styles:
+        styles[triggered_id] = "btn-primary"
+
+    # Update data based on the button pressed
+    row_data, column_defs = [], []
+    if triggered_id == 'ipv4':
+        row_data = ag_grid_handler.format_json_data_for_aggrid()
+        column_defs = ag_grid_handler.generate_column_definitions('json')
+    elif triggered_id == 'ipv6':
+        # You need to define how to handle IPv6 data update if necessary
+        pass
+    elif triggered_id == 'whoisv4':
+        row_data = ag_grid_handler.format_whois4_data_for_aggrid()
+        column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+    
+    return styles["ipv4"], styles["ipv6"], styles["whoisv4"], row_data, column_defs
+
+@app.callback(
+    Output('dynamic-card-content', 'children'),
+    Input('tabs-example', 'value')
+)
+def render_content(tab):
+    if tab == 'tab-1':
+        return html.Div([
+            dbc.Col(dcc.Dropdown(
+                id='scale-selector',
+                options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
+                    {'label': 'Normal Visualisation', 'value': 'normal'},
+                    {'label': 'Logarithmic Visualisation', 'value': 'log'}
+                ],
+                value='log',
+                clearable=False,
+            )),
+        ])
+    elif tab == 'tab-2':
+        return html.Div([
+            dbc.Col(dcc.Dropdown(
+                id='scale-selector',
+                options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
+                    {'label': 'Normal Visualisation', 'value': 'normal'},
+                    {'label': 'Logarithmic Visualisation', 'value': 'log'}
+                ],
+                value='log',
+                clearable=False,
+            )),
+        ])
+    elif tab == 'tab-3':
+        return html.Div([
+            dbc.Col([
+                dcc.RadioItems(
+                    id='pie-selector',
+                    options=[
+                        {'label': html.Div('Total Pool', style={'padding-left': 3}), 'value': 'TotalPool'},
+                        {'label': html.Div('RIR', style={'padding-left': 3}), 'value': 'RIR'},
+                        {'label': html.Div('ARIN', style={'padding-left': 3}), 'value': 'ARIN'},
+                        {'label': html.Div('APNIC', style={'padding-left': 3}), 'value': 'APNIC'},
+                        {'label': html.Div('RIPE NCC', style={'padding-left': 3}), 'value': 'RIPENCC'},
+                        {'label': html.Div('LACNIC', style={'padding-left': 3}), 'value': 'LACNIC'},
+                        {'label': html.Div('AFRINIC', style={'padding-left': 3}), 'value': 'AFRINIC'}
+                    ],
+                    value='TotalPool',  # Default value
+                    labelStyle={'display': 'inline-flex', 'margin-right': '5px'},
+                )
+            ], width={'size': 8, 'offset': 1}, align='center'),
+            dbc.Col([
+                dbc.Button('Toggle Legend', id='toggle-legend-button', color='primary', n_clicks=0)
+            ], width=3, align='center')  # Adjust width and alignment as needed
+        ])
+    else:
+        return html.Div("Select a tab")  # Default message or content
 
 '''----------Render the application----------'''    
 # App Layout
 app.layout = html.Div([
-    dbc.Row(
-    [
-        dbc.Col(dcc.Dropdown(
-            id='figure-selector',
-            options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
-                {'label': 'Choropleth Map', 'value': 'choropleth-map'},
-                {'label': 'Scatter Plot', 'value': 'scatter-plot'}
-            ],
-            value='choropleth-map',
-            clearable=False,
-        ), width={'size': 3, 'offset': 1}, className='justify-content-end'),
-        # Header centered within its column, 4/12 spaces
-        dbc.Col(html.H2('IPv4 Allocation Data', className='text-center'), width=4),
-        # Dropdown aligned right, 4/12 spaces
-        dbc.Col(dcc.Dropdown(
-            id='scale-selector',
-            options=[ # TODO: Fix log scale for the pie chart since everything is squashed.
-                {'label': 'Normal Visualisation', 'value': 'normal'},
-                {'label': 'Logarithmic Visualisation', 'value': 'log'}
-            ],
-            value='log',
-            clearable=False,
-        ), width=3, className='justify-content-end'),
-    ],
-    className='align-items-center',  # Vertically align the columns if they wrap on smaller screens
-    ),
-    dbc.Row( 
-        dbc.Col(html.Div(id='graph-container'), width=12)
-    ),
     dbc.Row([
-    dbc.Col([
-        dcc.Dropdown(
-            id='dataset_selector',
-            options=[
-                {'label': html.Div('IPv4', style={'padding-left': 3}), 'value': 'IPv4'},
-                {'label': html.Div('IPv6', style={'padding-left': 3}), 'value': 'IPv6'},
-                {'label': html.Div('WHOIS', style={'padding-left': 3}), 'value': 'WHOIS'}
-            ],
-            value='IPv4',  # Default value
-            #labelStyle={'display': 'inline-flex', 'margin-right': '5px'},
-        )
-    ], width={'size': 4, 'offset': 1}, className='center'),
-    ]),
-    dbc.Row([
-        dbc.Col([
-            dcc.RadioItems(
-                id='pie-selector',
-                options=[
-                    {'label': html.Div('Total Pool', style={'padding-left': 3}), 'value': 'TotalPool'},
-                    {'label': html.Div('RIR', style={'padding-left': 3}), 'value': 'RIR'},
-                    {'label': html.Div('ARIN', style={'padding-left': 3}), 'value': 'ARIN'},
-                    {'label': html.Div('APNIC', style={'padding-left': 3}), 'value': 'APNIC'},
-                    {'label': html.Div('RIPE NCC', style={'padding-left': 3}), 'value': 'RIPENCC'},
-                    {'label': html.Div('LACNIC', style={'padding-left': 3}), 'value': 'LACNIC'},
-                    {'label': html.Div('AFRINIC', style={'padding-left': 3}), 'value': 'AFRINIC'}
+        dbc.Col([  # Column for left-aligned heading
+            html.H3('Internet Protocol Allocation Visualisation Model'),
+        ], style={'display': 'flex', 'align-items': 'center'}, width={'size': 7, 'offset': 1}),  # Center heading vertically
+        dbc.Col([  # Column for right-aligned buttons
+            dbc.ButtonGroup(
+                [
+                    dbc.Button("IPv4 Pool Data", id="ipv4", outline=True, className="btn-primary", n_clicks=0),
+                    dbc.Button("WHOIS v6", id="ipv6", outline=True, className="btn-outline-primary", n_clicks=0),
+                    dbc.Button("WHOIS v4", id="whoisv4", outline=True, className="btn-outline-primary", n_clicks=0),
                 ],
-                value='TotalPool',  # Default value
-                labelStyle={'display': 'inline-flex', 'margin-right': '5px'},
+                className="mb-3",
             )
-        ], width={'size': 8, 'offset': 1}, align='center'),
-        dbc.Col([
-            dbc.Button('Toggle Legend', id='toggle-legend-button', color='primary', n_clicks=0)
-        ], width=3, align='center')  # Adjust width and alignment as needed
-    ]),
-    dbc.Row([
-        dbc.Col(dcc.Graph(id='the-pie-figure'), width=12)
-    ]),
-    dbc.Row(
-        dbc.Col(dag.AgGrid(
-            id='the-ag-grid',
-            rowData=[],
-            columnDefs=[],
-            className='ag-theme-balham',
-            dashGridOptions={'pagination': True, 'paginationAutoPageSize': True},
-        ), width={'size':10, 'offset':1})
-    ),
+        ], className='d-flex justify-content-end align-items-center', width={'size': 3}),  # Align buttons & center vertically
+        dbc.Col([], width={'size': 1})
+    ], style={'height': '10%', 'display': 'flex', 'flex-direction': 'row'}),
     dbc.Row([
         dbc.Col([
-            dcc.Dropdown(
-                id='selected_value',
-                options=[
-                    {'label': 'RIR', 'value': 'rir'},
-                    {'label': 'Global', 'value': 'global'},
-                    ],
-                value='rir',
-            )
-        ]),
+            dbc.Card(id='dynamic-card-content', style={'padding': '10px', 'height': '97%', 'background-color': '#f2f2f2'}),
+        ], width={'size': 2, 'offset': 1}),
+        dbc.Col([
+        dbc.Card([
+            dbc.CardBody([
+                dcc.Tabs(id='tabs-example', children=[
+                    dcc.Tab(label='Choropleth Map', children=[
+                        dcc.Graph(id='the-choropleth-map')
+                    ]),
+                    dcc.Tab(label='Scatter Plot', children=[
+                        dcc.Graph(id='the-scatter-plot')
+                    ]),
+                    dcc.Tab(label='Pie Figure', children=[
+                        dcc.Graph(id='the-pie-figure')
+                    ]),
+                ])
+            ])
+        ], style={'marginBottom': 20, 'height': '55%'}),
+        ], style={'height': '100%'}),
+        dbc.Col([], width={'size':1})
     ]),
     dbc.Row([
-    dbc.Col([
-        dcc.Graph(id='the-animated-scatter-plot')
-    ])
-    ])
-
-], className='container-fluid')
+        dbc.Col([
+            dbc.Card([
+                    dbc.CardBody([
+                        dag.AgGrid(
+                            id='the-ag-grid',
+                            rowData=[],
+                            columnDefs=[],
+                            className='ag-theme-balham',
+                            dashGridOptions={'pagination': True, 'paginationAutoPageSize': True},
+                            defaultColDef={
+                                'flex': 1,
+                                'minWidth': 100,
+                            },
+                            style={'height': '100%', 'width': '100%'},
+                        )
+                    ])
+                ], style={'height': '40%'}),
+        ], width={'size': 10, 'offset': 1}),
+    ], style={'height': '90%'}),
+], className='container-fluid', style={'height': '100vh', 'width': '100%'})
 
 if __name__ == '__main__':
     app.run_server(debug=True)
