@@ -1,5 +1,4 @@
 import plotly.express as px
-import pandas as pd
 
 class ScatterHandler:
     def __init__(self, data_handler):#, hover_template_handler):

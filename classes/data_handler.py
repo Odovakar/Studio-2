@@ -2,10 +2,9 @@ import requests
 import pandas as pd
 import numpy as np
 import pycountry
-import wbdata
 from datetime import datetime
-from io import StringIO
 
+# JSON Conversion is prioritised because of its compatability with dash/JS
 class DataHandler:
     def __init__(self, json_url, whois_v4_pop_csv, population_csv): #netlist_url, 
         self.json_url = json_url
@@ -21,6 +20,7 @@ class DataHandler:
             data = response.json()
             print("Data fetched successfully")
             self.json_df = self.create_and_process_dataframe(self.transform_json_data(data))
+            self.enhance_dataframe(self.json_df)
             if not self.json_df.empty:
                 print("DataFrame processed and populated.")
             else:
@@ -44,24 +44,6 @@ class DataHandler:
         except Exception as e:
             print(f"Error loading population data: {e}")
             return None
-    
-    # def fetch_and_process_data_ts(self):
-    #     self.fetch_whois_ipv4_data()
-    #     self.population_data = self.load_population_data()
-        #self.prepare_time_series_data()
-    
-    # def fetch_whois_ipv4_data(self):
-    #     response = requests.get(self.whois_v4_pop_csv)
-    #     if response.status_code == 200:
-    #         data = StringIO(response.text)
-    #         self.whois_ipv4_df = pd.read_csv(data)
-    #         self.process_whois_ipv4_data()
-    #         if not self.whois_ipv4_df.empty:
-    #             print("WHOIS IPv4 DataFrame processed and populated.")
-    #         else:
-    #             print("WHOIS IPv4 DataFrame is empty after processing.")
-    #     else:
-    #         print("Failed to fetch WHOIS IPv4 data: HTTP", response.status_code)
 
     def fetch_whois_ipv4_data(self):
         try:
@@ -82,8 +64,6 @@ class DataHandler:
             print("WHOIS IPv4 data processed successfully.")
         except Exception as e:
             print(f"Error processing WHOIS IPv4 data: {e}")
-
-
 
     # JSON_DF
     def transform_json_data(self, json_data):
@@ -129,11 +109,11 @@ class DataHandler:
     @staticmethod
     def alpha3_to_rir(alpha_3):
         rir_by_region = {
-        'AFRINIC': ['DZA', 'AGO', 'BEN', 'BWA', 'BFA', 'BDI', 'CMR', 'CPV', 'CAF', 'COD', 'TCD', 'COM', 'COG', 'DJI', 'EGY', 'GNQ', 'ERI', 'ETH', 'GAB', 'GMB', 'GHA', 'GIN', 'GNB', 'CIV', 'KEN', 'LSO', 'LBR', 'LBY', 'MDG', 'MWI', 'MLI', 'MRT', 'MUS', 'MYT', 'MAR', 'MOZ', 'NAM', 'NER', 'NGA', 'REU', 'RWA', 'SHN', 'STP', 'SEN', 'SYC', 'SLE', 'SOM', 'ZAF', 'SSD', 'SDN', 'SWZ', 'TZA', 'TGO', 'TUN', 'UGA', 'ZMB', 'ZWE', 'XKX', 'ESH'],
+        'AFRINIC': ['DZA', 'AGO', 'BEN', 'BWA', 'BFA', 'BDI', 'CMR', 'CPV', 'CAF', 'COD', 'TCD', 'COM', 'COG', 'DJI', 'EGY', 'GNQ', 'ERI', 'ETH', 'GAB', 'GMB', 'GHA', 'GIN', 'GNB', 'CIV', 'KEN', 'LSO', 'LBR', 'LBY', 'MDG', 'MWI', 'MLI', 'MRT', 'MUS', 'MYT', 'MAR', 'MOZ', 'NAM', 'NER', 'NGA', 'REU', 'RWA', 'SHN', 'STP', 'SEN', 'SYC', 'SLE', 'SOM', 'ZAF', 'SSD', 'SDN', 'SWZ', 'TZA', 'TGO', 'TUN', 'UGA', 'ZMB', 'ZWE', 'ESH'],
         'APNIC': ['AFG', 'AUS', 'BGD', 'BTN', 'BRN', 'KHM', 'CHN', 'CXR', 'CCK', 'COK', 'IOT', 'FJI', 'HKG', 'IND', 'IDN', 'JPN', 'KAZ', 'PRK', 'KOR', 'KGZ', 'LAO', 'MAC', 'MYS', 'MDV', 'MNG', 'MMR', 'NPL', 'NCL', 'NZL', 'NIU', 'NFK', 'PAK', 'PLW', 'PNG', 'PHL', 'PCN', 'SGP', 'SLB', 'LKA', 'TWN', 'TJK', 'THA', 'TLS', 'TKL', 'TON', 'TUV', 'VUT', 'VNM', 'WLF', 'ASM', 'GUM', 'KIR', 'MHL', 'FSM', 'NRU', 'PLW', 'PYF', 'PNY', 'WSM'],
         'ARIN': ['AIA', 'ATG', 'ABW', 'BHS', 'BRB', 'BLM', 'BMU', 'BES', 'CAN', 'CYM', 'CUW', 'DMA', 'DOM', 'GLP', 'GRD', 'GRL', 'GTM', 'HTI', 'HND', 'JAM', 'MTQ', 'MEX', 'MSR', 'SXM', 'KNA', 'LCA', 'MAF', 'MNP', 'SPM', 'VCT', 'TTO', 'TCA', 'USA', 'VGB', 'VIR', 'PRI'],
         'LACNIC': ['ARG', 'BOL', 'BRA', 'BLZ', 'CHL', 'COL', 'CRI', 'CUB', 'CUW', 'DMA', 'ECU', 'SLV', 'FLK', 'GUF', 'GTM', 'GUY', 'HND', 'JAM', 'MTQ', 'MEX', 'NIC', 'PAN', 'PRY', 'PER', 'PRI', 'BLM', 'KNA', 'LCA', 'SPM', 'VCT', 'SGS', 'SUR', 'TTO', 'URY', 'VEN', 'BES', 'SXM', 'ABW'],
-        'RIPE NCC': ['ALA', 'ALB', 'AND', 'ARM', 'AUT', 'AZE', 'BHR', 'BLR', 'BEL', 'BIH', 'BGR', 'HRV', 'CYP', 'CZE', 'DNK', 'EST', 'FRO', 'FIN', 'FRA', 'GEO', 'DEU', 'GIB', 'GRC', 'GGY', 'VAT', 'HUN', 'ISL', 'IRN', 'IRQ', 'IRL', 'IMN', 'ISR', 'ITA', 'JEY', 'JOR', 'KWT', 'LVA', 'LBN', 'LIE', 'LTU', 'LUX', 'MLT', 'MDA', 'MCO', 'MNE', 'NLD', 'MKD', 'NOR', 'OMN', 'PSE', 'POL', 'PRT', 'QAT', 'ROU', 'RUS', 'SMR', 'SAU', 'SRB', 'SVK', 'SVN', 'ESP', 'SJM', 'SWE', 'CHE', 'SYR', 'TUR', 'UKR', 'UZB', 'ARE', 'GBR', 'YEM', 'KOS', 'TKM'],
+        'RIPE NCC': ['ALA', 'ALB', 'AND', 'ARM', 'AUT', 'AZE', 'BHR', 'BLR', 'BEL', 'BIH', 'BGR', 'HRV', 'CYP', 'CZE', 'DNK', 'EST', 'FRO', 'FIN', 'FRA', 'GEO', 'DEU', 'GIB', 'GRC', 'GGY', 'VAT', 'HUN', 'ISL', 'IRN', 'IRQ', 'IRL', 'IMN', 'ISR', 'ITA', 'JEY', 'JOR', 'KWT', 'LVA', 'LBN', 'LIE', 'LTU', 'LUX', 'MLT', 'MDA', 'MCO', 'MNE', 'NLD', 'MKD', 'NOR', 'OMN', 'PSE', 'POL', 'PRT', 'QAT', 'ROU', 'RUS', 'SMR', 'SAU', 'SRB', 'SVK', 'SVN', 'ESP', 'SJM', 'SWE', 'CHE', 'SYR', 'TUR', 'UKR', 'UZB', 'ARE', 'GBR', 'YEM', 'KOS', 'TKM', 'XKX', ],
         }
         for rir, countries in rir_by_region.items():
             if alpha_3 in countries:
