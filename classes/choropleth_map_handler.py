@@ -37,7 +37,7 @@ class ChoroplethHandler:
                 '1B+': 'rgb(250, 0, 196)'
             }
             return colors
-    def generate_figure(self, scale_type):
+    def generate_figure(self, scale_type): #, theme
         common_bottom_margin = 80 # Shared margin for colorbar and legend
         hover_template = self.hover_template_handler.get_hover_template(scale_type)
 
@@ -63,6 +63,7 @@ class ChoroplethHandler:
                 hover_name='name',
                 color_discrete_map=colors,
                 locationmode='ISO-3',
+                #template=theme,
                 hover_data={
                     'name': True,
                     'ipv4': ':,.0f',
@@ -85,7 +86,7 @@ class ChoroplethHandler:
                     yanchor="bottom",
                     itemsizing="constant"
                 ),
-                margin={"r":5, "t":5, "l":5, "b":5}
+                margin={"r":5, "t":5, "l":5, "b":5},
             )
             map_fig.update_traces(hovertemplate=hover_template)
         elif scale_type=='log':
@@ -99,6 +100,7 @@ class ChoroplethHandler:
                 color_continuous_scale=px.colors.sequential.Viridis,
                 range_color=[self.data_handler.json_df['log_ipv4'].min(), self.data_handler.json_df['log_ipv4'].max()],
                 locationmode='ISO-3',
+                #template=theme,
                 hover_data={
                     'name': True,
                     'ipv4': ':,.0f',
@@ -123,8 +125,7 @@ class ChoroplethHandler:
                     thickness=20,
                     len=0.5,  # Adjusts the length of the colorbar to 80% of the axis length
                 ),
-                margin={"r":5, "t":5, "l":5, "b":5}
-
+                margin={"r":5, "t":5, "l":5, "b":5},
             )
             map_fig.update_traces(hovertemplate=hover_template)
 

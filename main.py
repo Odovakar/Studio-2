@@ -1,8 +1,9 @@
 import dash
-from dash import Dash, html, dcc, Input, Output, State, callback_context
+from dash import Dash, html, dcc, Input, Output, State, callback_context, clientside_callback
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
+from dash_bootstrap_templates import load_figure_template
 
 from classes.data_handler import DataHandler
 from classes.pie_chart_handler import PieChartHandler
@@ -15,7 +16,13 @@ from classes.dynamic_card_handler import DynamicCardHandler
 
 
 roboto_font_url = "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
-external_stylesheets = [dbc.themes.BOOTSTRAP, roboto_font_url]
+external_stylesheets = [
+    dbc.themes.BOOTSTRAP,
+    dbc.icons.FONT_AWESOME,
+    roboto_font_url
+]
+# Bootstrap themes
+load_figure_template(["bootstrap", "bootstrap_dark"])
 
 # Initialising DataHandler
 data_handler = DataHandler(
@@ -89,16 +96,48 @@ def update_dataset(n_ipv4, n_whoisv6, n_whoisv4, data):
         data_handler.fetch_whois_ipv4_data()
         return {'dataset': 'whoisv4','data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
 
+'''----------Pie Chart----------'''
+@app.callback(
+    Output('the-pie-chart', 'figure'),
+    [Input('pie-selector-accordion', 'active_item'),
+     Input('active-dataset', 'data'),
+     Input('toggle-legend-button', 'n_clicks'),
+     Input('graph-tabs', 'value')] #
+)
+def update_pie_figure(active_item, active_dataset, n_clicks, active_tab):
+    #print("Callback triggered:", active_item, n_clicks, active_tab)
+    if not active_dataset or 'dataset' not in active_dataset or active_tab != 'pie-tab':
+        raise dash.exceptions.PreventUpdate
+    
+    show_legend = n_clicks % 2 == 1
+    opacity = 0.5 if show_legend else 1.0
+    return pie_chart_handler.generate_figure(active_item, active_dataset, show_legend, opacity)
+
+'''----------Scatter Plot----------'''
+@app.callback(
+    Output('the-scatter-plot', 'figure'),
+    [Input('active-dataset', 'data'), Input('graph-tabs', 'value'), Input('color-scale-dropdown', 'value')]
+)
+def update_scatter_plot(active_dataset, active_tab, color_scale_dropdown):
+    if not active_dataset or 'dataset' not in active_dataset or active_tab != 'scatter-tab':
+        raise dash.exceptions.PreventUpdate
+    
+    return scatter_plot_handler.generate_figure(color_scale_dropdown)
+
 '''----------Choropleth Map Stuff----------'''
 @app.callback(
         Output('the-choropleth-map', 'figure'),
-        [Input('active-dataset', 'data'), Input('graph-tabs', 'value'), Input('color-scale-dropdown', 'value')],
+        [Input('active-dataset', 'data'),
+         Input('graph-tabs', 'value'),
+         Input('color-scale-dropdown', 'value'),
+         ],#State('theme-store', 'data')
 )
-def update_choropleth_map(active_dataset, active_tab, color_scale_dropdown):
+def update_choropleth_map(active_dataset, active_tab, color_scale_dropdown):#, theme_data
     if not active_dataset or 'dataset' not in active_dataset or active_tab != 'choropleth-tab':
         raise dash.exceptions.PreventUpdate
     
-    return choropleth_map_handler.generate_figure(color_scale_dropdown)
+    #theme = theme_data['theme']
+    return choropleth_map_handler.generate_figure(color_scale_dropdown) #, theme
 
 '''----------AG Grid Stuff----------'''
 @app.callback(
@@ -126,8 +165,10 @@ def update_columns(active_dataset):
     return row_data, column_defs
 
 '''----------UI Element Logic----------'''
+# NOTE: The logic for the dynamic control card displayed on the left of the UI is handled in the
+# appropriate handler becuase of it's size
+
 # This function will display information related to the graph that's currently on display in the graph tab.
-# Same logic, different output-card.
 @app.callback(
     Output('dynamic-card-content', 'children'),
     [Input('active-dataset', 'data'), Input('graph-tabs', 'value')],
@@ -161,13 +202,40 @@ def update_button_styles(n_ipv4, n_whoisv6, n_whoisv4):
         elif button_id == "whoisv4":
             return ["btn-outline-primary", "btn-outline-primary", "btn-primary"]
 
+# Light/Dark Mode
+# @app.callback(
+#     Output('theme-store', 'data'),
+#     [Input('mode-switch', 'value')]
+# )
+# def update_theme_store(switch_on):
+#     theme = 'bootstrap_dark' if switch_on else 'minty'
+#     return {'theme': theme}
+
+# clientside_callback(
+#     """
+#     function(isDarkMode) {
+#         document.documentElement.setAttribute('data-bs-theme', isDarkMode ? 'dark' : 'light');
+#         return window.dash_clientside.no_update;
+#     }
+#     """,
+#     Output("mode-switch", "data-bs-theme"),
+#     Input("mode-switch", "value")
+# )
+
+
 '''----------Render the application----------'''    
 # App Layout
 app.layout = html.Div([
     dcc.Store(id='active-dataset', storage_type='memory'),
+    #dcc.Store(id='theme-store', data={'theme': 'bootstrap'}),
     dbc.Row([ # SECTION 1
         dbc.Col([  # Column for left-aligned heading
             html.H3('Internet Protocol Allocation Visualisation Model'),
+            html.Div([
+                dbc.Label(className='fa fa-moon', html_for='mode-switch'),
+                dbc.Switch(id='mode-switch', value=True, className='d-inline-block ms-1', persistence=True),
+                dbc.Label(className='fa fa-sun', html_for='mode-switch')
+            ])
         ], style={'display': 'flex', 'align-items': 'center'}, width={'size': 7, 'offset': 1}),  # Center heading vertically
         dbc.Col([  # Column for right-aligned buttons
             dbc.ButtonGroup(
