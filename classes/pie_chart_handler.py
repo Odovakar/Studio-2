@@ -41,13 +41,15 @@ class PieChartHandler:
             return None
 
 
-    def generate_figure(self, active_item, active_dataset, show_legend=True, opacity=1.0):
+    def generate_figure(self, active_item, active_dataset, switch_on, show_legend=True, opacity=1.0):
         df = None
         values = None
         names = None
         customdata = None
         hover_template = None
         hover_data = None
+        template = 'bootstrap' if switch_on else 'bootstrap_dark'
+
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item)
        # customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
@@ -57,8 +59,9 @@ class PieChartHandler:
             'opacity': opacity,
             'hovertemplate': hover_template
         }
-        layout_options = {'showlegend': True, 'margin': dict(t=50, b=50, l=50, r=50), 'uniformtext_mode': 'hide', 'uniformtext_minsize': 12, 'height': 400, 'width': 400}
+        #layout_options = {'showlegend': True, 'margin': dict(t=50, b=50, l=50, r=50), 'uniformtext_mode': 'hide', 'uniformtext_minsize': 12, 'height': 400, 'width': 400}
         layout_options = {
+            'template': template,
             'showlegend': show_legend,
             'margin': dict(t=50, b=50, l=50, r=50),
             'uniformtext_mode': 'hide',
@@ -76,7 +79,7 @@ class PieChartHandler:
 
         if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'TotalPool':
-                print('it works')
+                #print('it works')
                 customdata = self.populate_custom_data(active_item, active_dataset)
                 hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
                 df = self.data_handler.json_df
@@ -113,11 +116,40 @@ class PieChartHandler:
                 df = self.calculate_rir_country_data(self.data_handler.json_df, 'AFRINIC')
                 values = 'percentv4'
                 names = 'name'
-            
+            elif active_item == 'SUNBURST':
+                df = self.data_handler.json_df
+                #values = 'percentv4'
+                #names = 'name'
+                sun_fig = px.sunburst(
+                    df,
+                    path=['RIR', 'name'],
+                    values='ipv4', 
+                    color='RIR',
+                    #hover_data=['name', 'pop', 'percentv4'],
+                    color_continuous_scale='Viridis',
+                    template=template
+                )
+                layout_options = {
+                    #'template': template,
+                    #'showlegend': show_legend,
+                    'margin': dict(t=50, b=50, l=50, r=50),
+                    'uniformtext_mode': 'hide',
+                    'uniformtext_minsize': 12,
+                    'legend': {
+                        'orientation': 'h',
+                        'x': 0,
+                        'y': 1.1, 
+                        'bgcolor':
+                        'rgba(255, 255, 255, 0)',
+                        'bordercolor':'rgba(255, 255, 255, 0)'
+                    }
+                }
+                return sun_fig
             else:
                 df = self.get_data_by_rir(active_item)
                 values = 'percentv4'
                 names = 'name'
+
 
         if active_dataset == 'whoisv4':
             customdata = self.populate_custom_data(active_item, active_dataset)
@@ -131,7 +163,7 @@ class PieChartHandler:
             values = 'Start' 
             names = 'Registry'
 
-        pie_fig = px.pie(df, values=values, names=names) #, custom_data=customdata, hover_data=hover_data
+        pie_fig = px.pie(df, values=values, names=names, color_discrete_sequence=px.colors.qualitative.Pastel) #, custom_data=customdata, hover_data=hover_data
         pie_fig.update_traces(**trace_options)
         pie_fig.update_layout(**layout_options)
         return pie_fig

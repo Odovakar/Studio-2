@@ -9,9 +9,8 @@ class TimeSeriesHandler:
     def __init__(self, data_handler):
         self.data_handler = data_handler
 
-    def generate_figure(self, selected_value):
-        if selected_value == 'rir':
-            # Use the RIR data already processed in DataHandler
+    def generate_figure(self, active_item):
+        if active_item == 'v4cumulativepoolpopulation':
             grouped_df = self.data_handler.time_series_data[self.data_handler.time_series_data['Registry'].notna()]
             fig = px.scatter(
                 grouped_df,
@@ -26,7 +25,7 @@ class TimeSeriesHandler:
                 range_y=[0, grouped_df['Value'].max() + 1]
             )
 
-        elif selected_value == 'global':
+        elif active_item == 'global':
             # Use the global data already processed in DataHandler
             grouped_df = self.data_handler.time_series_data[self.data_handler.time_series_data['Country'].notna()]
             fig = px.scatter(

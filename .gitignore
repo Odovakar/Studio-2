@@ -22,3 +22,6 @@ backups/SteppingStones/wpopdata_long_format.csv
 layout_tests/layout_tests.py
 backups/main.py
 bigboi.py
+backups/stiff
+classes/time_series_handler.py
+classes/__pycache__/time_series_handler.cpython-310.pyc

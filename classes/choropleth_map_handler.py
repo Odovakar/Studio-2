@@ -37,9 +37,10 @@ class ChoroplethHandler:
                 '1B+': 'rgb(250, 0, 196)'
             }
             return colors
-    def generate_figure(self, scale_type): #, theme
+    def generate_figure(self, scale_type, switch_on):
         common_bottom_margin = 80 # Shared margin for colorbar and legend
         hover_template = self.hover_template_handler.get_hover_template(scale_type)
+        template = 'bootstrap' if switch_on else 'bootstrap_dark'
 
         customdata = np.stack((
             self.data_handler.json_df['name'],          # Country name
@@ -57,13 +58,14 @@ class ChoroplethHandler:
             hover_template = self.hover_template_handler.get_hover_template(scale_type)
 
             map_fig = px.choropleth(
+                #autosize=True,
                 data_frame=self.data_handler.json_df,
                 locations='iso_alpha_3',
                 color='ipv4_grouping',
                 hover_name='name',
                 color_discrete_map=colors,
                 locationmode='ISO-3',
-                #template=theme,
+
                 hover_data={
                     'name': True,
                     'ipv4': ':,.0f',
@@ -84,9 +86,10 @@ class ChoroplethHandler:
                     xanchor="center",
                     y=-0.1,
                     yanchor="bottom",
-                    itemsizing="constant"
+                    itemsizing="constant",
                 ),
-                margin={"r":5, "t":5, "l":5, "b":5},
+                template=template
+                #margin={"r":5, "t":5, "l":5, "b":5},
             )
             map_fig.update_traces(hovertemplate=hover_template)
         elif scale_type=='log':
@@ -100,7 +103,6 @@ class ChoroplethHandler:
                 color_continuous_scale=px.colors.sequential.Viridis,
                 range_color=[self.data_handler.json_df['log_ipv4'].min(), self.data_handler.json_df['log_ipv4'].max()],
                 locationmode='ISO-3',
-                #template=theme,
                 hover_data={
                     'name': True,
                     'ipv4': ':,.0f',
@@ -110,10 +112,9 @@ class ChoroplethHandler:
                     'iso_alpha_3': False,
                     'ipv4_grouping': False,
                     'log_ipv4': True
-                }
+                },
             )
             map_fig.update_layout(
-                autosize=True,
                 coloraxis_colorbar=dict(
                     title="Log IPv4",
                     orientation="h",
@@ -123,13 +124,14 @@ class ChoroplethHandler:
                     yanchor="bottom",
                     thicknessmode="pixels",
                     thickness=20,
-                    len=0.5,  # Adjusts the length of the colorbar to 80% of the axis length
+                    len=0.5,  
                 ),
-                margin={"r":5, "t":5, "l":5, "b":5},
+                template=template
+                #margin={"r":5, "t":5, "l":5, "b":5},
             )
             map_fig.update_traces(hovertemplate=hover_template)
 
         map_fig.update_geos(showframe=False, projection_type='equirectangular', lonaxis_range=[-180, 180], lataxis_range=[-60, 90])
-        map_fig.update_layout(autosize=True)
+        map_fig.update_layout()
 
-        return map_fig
+        return map_fig  
