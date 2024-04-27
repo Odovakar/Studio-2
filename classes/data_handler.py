@@ -89,6 +89,21 @@ class DataHandler:
         print(json_df.columns.tolist())
         return json_df
 
+    def create_time_series_df(self):
+        df = self.whois_ipv4_df
+        aggregated_df = df.groupby(['Country', 'Year']).agg({
+            'ISO-3': 'first',      # Change 'ISO-3' to your actual column name if different
+            'Registry': 'first',   # Change 'Registry' to your actual column name if different
+            'Date': 'first',       # Or 'last' depending on which is more appropriate for your analysis
+            'Value': 'sum',      # Sums up all the 'Value' entries for each country per year
+            'Population': 'first'
+        }).reset_index()
+
+        aggregated_df['RIR'] = aggregated_df['ISO-3'].apply(self.alpha3_to_rir) 
+        norway_entries = aggregated_df[aggregated_df['Country'] == 'Norway']
+        print(norway_entries)
+
+        return aggregated_df
 
     @staticmethod
     def calculate_prefix(value):

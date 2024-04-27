@@ -53,7 +53,7 @@ class DynamicCardHandler:
     def get_content(self, active_dataset, active_tab):
         if not active_dataset or 'data' not in active_dataset:
             return "Please select a dataset and ensure data is loaded."
-        print(active_tab, 'active tab present in dyn_card_handler')
+        #print(active_tab, 'active tab present in dyn_card_handler')
         dataset = active_dataset.get('dataset')
         # CHOROPLETH TAB
         if active_tab == 'choropleth-tab':

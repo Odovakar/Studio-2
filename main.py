@@ -33,7 +33,7 @@ data_handler = DataHandler(
 
 data_handler.fetch_json_data()
 data_handler.fetch_whois_ipv4_data()
-
+time_series_df = data_handler.create_time_series_df()
 
 # Instantiating Handlers
 hover_template_handler = HoverTemplateHandler(data_handler)
@@ -88,10 +88,10 @@ def update_dataset(n_ipv4, n_whoisv6, n_whoisv4, data):
     if button_id == "ipv4":
         data_handler.fetch_json_data()
         return {'dataset': 'ipv4','data': data_handler.json_df.to_json(date_format='iso', orient='split')}
-    elif button_id == "whoisv6":
-        return None
-        data_handler.fetch_whoisv6_data()
-        return {'dataset': 'whoisv6','data': data_handler.whoisv6_df.to_json(date_format='iso', orient='split')}
+    # elif button_id == "whoisv6":
+    #     return None
+    #     data_handler.fetch_whoisv6_data()
+    #     return {'dataset': 'whoisv6','data': data_handler.whoisv6_df.to_json(date_format='iso', orient='split')}
     elif button_id == "whoisv4":
         data_handler.fetch_whois_ipv4_data()
         return {'dataset': 'whoisv4','data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
@@ -266,6 +266,10 @@ clientside_callback(
 # App Layout
 app.layout = dbc.Container([
     dcc.Store(id='active-dataset', storage_type='memory'),
+    dcc.Store(id='ipv4-dataset', storage_type='memory'),
+    dcc.Store(id='whois-ipv4-dataset', storage_type='memory'),
+    dcc.Store(id='ipv4-time-series-dataset', storage_type='memory'),
+    dcc.Store(id='ipv6-dataset', storage_type='memory'),
     #dcc.Store(id='theme-store', data={'theme': dbc.themes.BOOTSTRAP}),
     # Header section
     dbc.Row([
@@ -299,7 +303,7 @@ app.layout = dbc.Container([
                         value='choropleth-tab',
                         children=[
                             dcc.Tab(label='Choropleth Map', value='choropleth-tab', children=[dcc.Graph(id='the-choropleth-map', style={'height':'45vh'}, className='dbc')], className='tab-content dbc'),
-                            dcc.Tab(label='Scatter Plot', value='scatter-tab', children=[dcc.Graph(id='the-scatter-plot', style={'height':'45vh', 'width':'90vh'}, className='dbc')], className='tab-content dbc'),
+                            dcc.Tab(label='Scatter Plot', value='scatter-tab', children=[dcc.Graph(id='the-scatter-plot', style={'height':'45vh'}, className='dbc')], className='tab-content dbc'),
                             dcc.Tab(label='Pie Chart', value='pie-tab', children=[dcc.Graph(id='the-pie-chart', style={'height':'45vh'})], className='tab-content'),
                             dcc.Tab(label='Bar Chart', value='bar-tab', children=[dcc.Graph(id='the-bar-chart', style={'height':'45vh'})], className='tab-content'),
                             dcc.Tab(label='Custom Graph', value='custom-tab', children=[dcc.Graph(id='the-custom-chart')], className='tab-content dbc'),
