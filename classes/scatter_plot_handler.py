@@ -128,7 +128,6 @@ class ScatterHandler:
 
         #print('Type of active_dataset:', type(active_dataset))
        # print('Dataset key\'s value:', active_dataset.get('dataset'))  # Confirm what value this key holds
-        if active_dataset == 'whoisv4':
-
-            if active_item == 'v4cumulativepoolpopulation':
-
+        # if active_dataset == 'whoisv4':
+        #     if active_item == 'v4cumulativepoolpopulation':
+        #         print('WIP')

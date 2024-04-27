@@ -54,35 +54,37 @@ class DynamicCardHandler:
         if not active_dataset or 'data' not in active_dataset:
             return "Please select a dataset and ensure data is loaded."
         #print(active_tab, 'active tab present in dyn_card_handler')
+        active_item = None
         dataset = active_dataset.get('dataset')
+        print(dataset, 'in choropleth dynamic card handler')
         # CHOROPLETH TAB
         if active_tab == 'choropleth-tab':
-            # Intantianiating Keywords
-            title = 'Choropleth Map Options'
-            id = 'choropleth-accordion-selector'
-            accordion_options = [
-                dbc.AccordionItem(
-                    'If you hover over each country, a tooltip with IPv4 information related to that respective country will show. The coloring of the map is based on the amount of IPv4 addresses allocated to each respective country modified with a logarithmic scale for better visualisation.',
-                    item_id = 'log',
-                    title='Global IPv4 Allocation - Log',
-                ),
-                dbc.AccordionItem(
-                    'The map is closely related to the logarithmically colored map, although similar, the grouping will better visualise the distinct group the country has been allotted to.',
-                    item_id = 'normal',
-                    title = 'Regional Internet Registry\'s Percent of Pool'
-                ),
-            ]
+                # Intantianiating Keywords
+                title = 'Choropleth Map Options'
+                id = 'choropleth-accordion-selector'
+                accordion_options = [
+                    dbc.AccordionItem(
+                        'If you hover over each country, a tooltip with IPv4 information related to that respective country will show. The coloring of the map is based on the amount of IPv4 addresses allocated to each respective country modified with a logarithmic scale for better visualisation.',
+                        item_id = 'log',
+                        title='Global IPv4 Allocation - Log',
+                    ),
+                    dbc.AccordionItem(
+                        'The map is closely related to the logarithmically colored map, although similar, the grouping will better visualise the distinct group the country has been allotted to.',
+                        item_id = 'normal',
+                        title = 'Regional Internet Registry\'s Percent of Pool'
+                    ),
+                ]
 
-            # Instantiating Contents
-            #card_contents = self.get_accordion('Stuff about the choropleth map')
-            card_controls = self.get_accordion(title, id, accordion_options)
-            
+                # Instantiating Contents
+                #card_contents = self.get_accordion('Stuff about the choropleth map')
+                card_controls = self.get_accordion(title, id, accordion_options)
+                
 
-            # Returning Contents
-            return html.Div([
-                card_controls,
-                #card_contents
-            ], className = 'dynamic-card-content')
+                # Returning Contents
+                return html.Div([
+                    card_controls,
+                    #card_contents
+                ], className = 'dynamic-card-content')
         # SCATTER TAB
         elif active_tab == 'scatter-tab':
             if dataset == 'ipv4':
@@ -187,9 +189,9 @@ class DynamicCardHandler:
         
     
         elif active_tab == 'bar-tab':
-            print(active_tab, 'we\'re here in the dyn card conditional')
+            #print(active_tab, 'we\'re here in the dyn card conditional')
             if dataset == 'ipv4':
-                print(dataset, 'dataset present in dy_car_hand conditional')
+                #print(dataset, 'dataset present in dy_car_hand conditional')
                 title = 'Bar Chart Options'
                 id = 'bar-selector-accordion'
                 accordion_options = [

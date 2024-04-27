@@ -12,6 +12,7 @@ class DataHandler:
         self.population_csv = population_csv
         self.json_df = None
         self.whois_ipv4_df = None
+        self.ipv4_ts_df = None
 
 
     def fetch_json_data(self):
@@ -90,20 +91,18 @@ class DataHandler:
         return json_df
 
     def create_time_series_df(self):
-        df = self.whois_ipv4_df
-        aggregated_df = df.groupby(['Country', 'Year']).agg({
-            'ISO-3': 'first',      # Change 'ISO-3' to your actual column name if different
-            'Registry': 'first',   # Change 'Registry' to your actual column name if different
-            'Date': 'first',       # Or 'last' depending on which is more appropriate for your analysis
-            'Value': 'sum',      # Sums up all the 'Value' entries for each country per year
+        ipv4_ts_df = self.whois_ipv4_df
+        ipv4_ts_df = ipv4_ts_df.groupby(['Country', 'Year']).agg({
+            'ISO-3': 'first', 
+            'Registry': 'first', 
+            'Date': 'first',
+            'Value': 'sum',
             'Population': 'first'
         }).reset_index()
 
-        aggregated_df['RIR'] = aggregated_df['ISO-3'].apply(self.alpha3_to_rir) 
-        norway_entries = aggregated_df[aggregated_df['Country'] == 'Norway']
-        print(norway_entries)
-
-        return aggregated_df
+        ipv4_ts_df['RIR'] = ipv4_ts_df['ISO-3'].apply(self.alpha3_to_rir)
+        #print(ipv4_ts_df)
+        self.ipv4_ts_df = ipv4_ts_df
 
     @staticmethod
     def calculate_prefix(value):

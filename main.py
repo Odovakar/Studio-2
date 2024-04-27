@@ -4,6 +4,7 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import plotly.io as pio
 from dash_bootstrap_templates import load_figure_template
+import json
 
 from classes.data_handler import DataHandler
 from classes.pie_chart_handler import PieChartHandler
@@ -33,7 +34,7 @@ data_handler = DataHandler(
 
 data_handler.fetch_json_data()
 data_handler.fetch_whois_ipv4_data()
-time_series_df = data_handler.create_time_series_df()
+data_handler.create_time_series_df()
 
 # Instantiating Handlers
 hover_template_handler = HoverTemplateHandler(data_handler)
@@ -63,150 +64,221 @@ ag_grid_data = ag_grid_handler.format_json_data_for_aggrid()
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 
 '''----------Fetch and store dataset----------'''
-# This logic will fetch and prep the data for use in the application
 @app.callback(
-    Output('active-dataset', 'data'),
-    [Input('ipv4', 'n_clicks'), Input('whoisv6', 'n_clicks'), Input('whoisv4', 'n_clicks')],
-    [State('active-dataset', 'data')]
+    Output('ipv4-time-series-dataset', 'data'),
+    [Input('whoisv4', 'n_clicks')],
+    State('ipv4-time-series-dataset', 'data')
 )
-def update_dataset(n_ipv4, n_whoisv6, n_whoisv4, data):
-    ctx = callback_context # Used to determine which button has been clicked
+def update_ipv4_time_series_dataset(n_whoisv4, data):
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        if data is None or 'dataset' not in data:
+            data_handler.create_time_series_df()
+            ipv4_ts_df = {
+                'dataset': 'ipv4_time_series',
+                'data': data_handler.ipv4_ts_df.to_json(date_format='iso', orient='split')
+            }
+            #print(ipv4_ts_df.get('dataset'), 'time series worked as well')
+            return ipv4_ts_df
 
-    if not ctx.triggered: # ctx.triggered(list) keeps track of all button clicks
-        if data is None or 'dataset' not in data: # Returns the standard dataset
-            return {'dataset': 'ipv4','data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
-    
-    # fetches the first input in the list where the prop(btn) that was clicked is stored.
-    # the input in the list will be ipv4.n_clicks, it's then split at the dot and,
-    # the button_id variable will now hold either ipv4 or whoisv6/4
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-    # Data fetched and converted for compatability with dcc.Store.
-    # The dict contains the dictionary data, as well as an entry denoting which dataset it is,
-    # for the update_graphs function, which needs to know which dataset is active
-    # to be able to choose which case to display.
-    if button_id == "ipv4":
-        data_handler.fetch_json_data()
-        return {'dataset': 'ipv4','data': data_handler.json_df.to_json(date_format='iso', orient='split')}
-    # elif button_id == "whoisv6":
-    #     return None
-    #     data_handler.fetch_whoisv6_data()
-    #     return {'dataset': 'whoisv6','data': data_handler.whoisv6_df.to_json(date_format='iso', orient='split')}
-    elif button_id == "whoisv4":
-        data_handler.fetch_whois_ipv4_data()
-        return {'dataset': 'whoisv4','data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
-
-'''----------Bar Chart----------'''
 @app.callback(
-    Output('the-bar-chart', 'figure', allow_duplicate=True),
-    [Input('bar-selector-accordion', 'active_item'),
-     Input('active-dataset', 'data'),
-     Input('graph-tabs', 'value'),
-     Input('toggle-xaxis-scale-button', 'n_clicks'),
-     Input("switch", "value")],
-     prevent_initial_call=True,
+    Output('whois-ipv4-dataset', 'data'),
+    [Input('whoisv4', 'n_clicks')],
+    State('whois-ipv4-dataset', 'data')
 )
-def update_bar_chart(active_item, active_dataset, active_tab, n_clicks, switch_on):
-    # print("Debug: Active Item:", active_item)
-    # #print("Debug: Active Dataset:", active_dataset)
-    # print("Debug: Active Tab:", active_tab)
-    if not active_dataset or 'dataset' not in active_dataset or active_tab != 'bar-tab':
-        raise dash.exceptions.PreventUpdate
+def update_ipv4_dataset(n_whoisv4, data):
+    ctx = callback_context
+    if not ctx.triggered:
+        if data is None or 'dataset' not in data:
+            data_handler.fetch_whois_ipv4_data()
+            whois_ipv4_dataset = {'dataset': 'whois_ipv4', 'data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
+            #print(whois_ipv4_dataset.get('dataset'), 'successfully populated')
+            return whois_ipv4_dataset
 
-    toggle_xaxis_type = 'log' if n_clicks % 2 == 1 else 'linear'
-    # print("Debug: Dataset confirmed:", active_dataset.get('dataset'))
-    # print(active_item)
-    return bar_chart_handler.generate_figure(active_item, active_dataset, toggle_xaxis_type, switch_on)
-
-'''----------Pie Chart----------'''
 @app.callback(
-    Output('the-pie-chart', 'figure', allow_duplicate=True),
-    [Input('pie-selector-accordion', 'active_item'),
-     Input('active-dataset', 'data'),
-     Input('toggle-legend-button', 'n_clicks'),
-     Input('graph-tabs', 'value'),
-     Input("switch", "value")],
-     prevent_initial_call=True,
+    Output('ipv4-dataset', 'data'),
+    [Input('whoisv4', 'n_clicks')],
+    State('ipv4-dataset', 'data')
 )
-def update_pie_figure(active_item, active_dataset, n_clicks, active_tab, switch_on):
-    #print("Callback triggered:", active_item, n_clicks, active_tab)
-    if not active_dataset or 'dataset' not in active_dataset or active_tab != 'pie-tab':
-        raise dash.exceptions.PreventUpdate
-    
-    show_legend = n_clicks % 2 == 1
-    opacity = 0.5 if show_legend else 1.0
-    return pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend, opacity)
+def update_ipv4_dataset(n_whoisv4, data):
+    ctx = callback_context
+    if not ctx.triggered:
+        if data is None or 'dataset' not in data:
+            data_handler.fetch_json_data()
+            ipv4_dataset = {'dataset': 'ipv4', 'data': data_handler.json_df.to_json(date_format='iso', orient='split')}
+            #print(ipv4_dataset.get('dataset'), 'successfully populated')
+            return ipv4_dataset
 
-'''----------Scatter Plot----------'''
 @app.callback(
-    Output('the-scatter-plot', 'figure', allow_duplicate=True),
-    [Input('active-dataset', 'data'), 
-    Input('graph-tabs', 'value'),
-    Input('scatter-selector-accordion', 'active_item'),
-    Input("switch", "value")],
-    prevent_initial_call=True,
+    Output('ipv6-dataset', 'data'),
+    [Input('whoisv6', 'n_clicks')],
+    [State('ipv6-dataset', 'data')],
+    prevent_initial_call=True
 )
-def update_scatter_plots(active_dataset, active_tab, scatter_selector_accordion, switch_on): #color_scale_dropdown, 
-    if not active_dataset or 'dataset' not in active_dataset or active_tab != 'scatter-tab':
-        raise dash.exceptions.PreventUpdate
-    
-    # Checking which element was triggered.
-    #trigger_id = dash.callback_context.triggered[0]['prop_id'].split('.')[0]
-    #print(active_dataset.get('dataset'), scatter_selector_accordion)
-    return scatter_plot_handler.generate_figure(scatter_selector_accordion, active_dataset, switch_on)
-
-# @app.callback(
-#     Output('the-scatter-plot', 'figure'),
-#     [Input('active-dataset', 'data'),
-#      Input('graph-tabs', 'value'),
-#      Input('scatter-selector-accordion', 'active_item')]
-# )
-# def update_animated_scatter_plot(active_dataset, active_tab, active_item):
-#     if not active_dataset or 'dataset' not in active_dataset or active_tab != 'scatter-tab':
-#         raise dash.exceptions.PreventUpdate
-    
-#     return time_series_handler.generate_figure(active_item)
+def update_ipv6_dataset(n_whoisv6, ipv6_data):
+    if not ipv6_data:
+        ipv6_data = data_handler.fetch_whoisv6_data()  # Your method to fetch data
+        ipv6_data = ipv6_data.to_json(date_format='iso', orient='split')
+    return ipv6_data
 
 '''----------Choropleth Map Stuff----------'''
 @app.callback(
         Output('the-choropleth-map', 'figure'),
-        [Input('active-dataset', 'data'),
-         Input('graph-tabs', 'value'),
-         Input('choropleth-accordion-selector', 'active_item'),
-         Input("switch", "value")],
-         prevent_initial_call=True,
+        [Input('ipv4-dataset', 'data'),
+        Input('whois-ipv4-dataset', 'data'),
+        Input('ipv6-dataset', 'data'),
+        Input('graph-tabs', 'value'),
+        Input('choropleth-accordion-selector', 'active_item'),
+        Input("switch", "value")],
 )
-def update_choropleth_map(active_dataset, active_tab, color_scale_dropdown, switch_on):#, theme_data
-    if not active_dataset or 'dataset' not in active_dataset or active_tab != 'choropleth-tab':
+def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, active_item, switch_on):
+    if active_tab != 'choropleth-tab':
         raise dash.exceptions.PreventUpdate
     
+    #print(active_item)
+
+    active_dataset = None
+    if active_item == 'normal':
+        active_dataset = ipv4_dataset
+    elif active_item == 'log':
+        active_dataset = ipv4_dataset
+
+    #print(active_tab, 'in the choropleth map function')
+
+    #print(active_dataset.get('data'))
+    if not active_dataset:
+        raise dash.exceptions.PreventUpdate
     #theme = theme_data['theme']
-    return choropleth_map_handler.generate_figure(color_scale_dropdown, switch_on) #, theme
+    #print(active_item, 'active_item in choropleth callback function')
+    return choropleth_map_handler.generate_figure(active_item, active_dataset, switch_on)
+
+'''----------Scatter Plot----------'''
+@app.callback(
+    Output('the-scatter-plot', 'figure'),
+    [Input('ipv4-dataset', 'data'),
+     Input('whois-ipv4-dataset', 'data'),
+     Input('ipv6-dataset', 'data'),
+     Input('graph-tabs', 'value'),
+     Input('scatter-selector-accordion', 'active_item'),
+     Input("switch", "value")],
+    #prevent_initial_call=True,
+)
+def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scatter_selector_accordion, switch_on):
+    if active_tab != 'scatter-tab':
+        raise dash.exceptions.PreventUpdate
+    
+    # Determine which dataset is currently active based on UI controls or other logic
+    active_dataset = None
+    if scatter_selector_accordion == 'log':
+        active_dataset = ipv4_data
+    elif scatter_selector_accordion == 'normal':
+        active_dataset = ipv4_data
+
+    if not active_dataset:
+        raise dash.exceptions.PreventUpdate
+    
+    # Assuming scatter_plot_handler can accept a dataset directly
+    return scatter_plot_handler.generate_figure(scatter_selector_accordion, active_dataset, switch_on)
+
+'''----------Pie Chart----------'''
+@app.callback(
+    Output('the-pie-chart', 'figure'),
+    [Input('pie-selector-accordion', 'active_item'),  # Consider this as the selector for dataset types if possible
+     Input('ipv4-dataset', 'data'),
+     Input('whois-ipv4-dataset', 'data'),
+     Input('ipv6-dataset', 'data'),
+     Input('toggle-legend-button', 'n_clicks'),
+     Input('graph-tabs', 'value'),
+     Input("switch", "value")],
+)
+def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, n_clicks, active_tab, switch_on):
+    if active_tab != 'pie-tab':
+        raise dash.exceptions.PreventUpdate
+
+    # Determine which dataset is currently active based on UI controls or other logic
+    active_dataset = None
+    if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC' or 'SUNBURST':
+        active_dataset = ipv4_data
+    # elif active_item == 'RIR':
+    #     active_dataset = whois_ipv4_data
+    elif active_item == 'ipv6':
+        active_dataset = ipv6_data
+
+    if not active_dataset:
+        raise dash.exceptions.PreventUpdate
+
+    # Toggle the legend display based on button clicks
+    show_legend = n_clicks % 2 == 1 if n_clicks is not None else False
+    opacity = 0.5 if show_legend else 1.0
+
+    # Assuming pie_chart_handler can accept a dataset directly
+    return pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend, opacity)
+
+'''----------Bar Chart----------'''
+@app.callback(
+    Output('the-bar-chart', 'figure'),
+    [Input('bar-selector-accordion', 'active_item'),  # This could be used to choose dataset type
+     Input('ipv4-dataset', 'data'),
+     Input('whois-ipv4-dataset', 'data'),
+     Input('ipv6-dataset', 'data'),
+     Input('graph-tabs', 'value'),
+     Input('toggle-xaxis-scale-button', 'n_clicks'),
+     Input("switch", "value")],
+    prevent_initial_call=True,
+)
+def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, n_clicks, switch_on):
+    if active_tab != 'bar-tab':
+        raise dash.exceptions.PreventUpdate
+
+    # Determine which dataset is currently active based on UI controls or other logic
+    active_dataset = None
+    if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC':
+        active_dataset = ipv4_data
+    # elif active_item == 'whois_ipv4':
+    #     active_dataset = whois_ipv4_data
+    elif active_item == 'ipv6':
+        active_dataset = ipv6_data
+
+    if not active_dataset:
+        raise dash.exceptions.PreventUpdate
+
+    # Toggle the x-axis type based on the number of clicks on the toggle button
+    toggle_xaxis_type = 'log' if n_clicks and n_clicks % 2 == 1 else 'linear'
+
+    # Assuming bar_chart_handler can accept a dataset directly
+    return bar_chart_handler.generate_figure(active_item, active_dataset, toggle_xaxis_type, switch_on)
 
 '''----------AG Grid Stuff----------'''
 @app.callback(
     [Output('the-ag-grid', 'rowData'),
      Output('the-ag-grid', 'columnDefs')],
-    Input('active-dataset', 'data'),
+    [Input('ag-switch', 'value'),
+     Input('ipv4-dataset', 'data'),
+     Input('whois-ipv4-dataset', 'data')],
+    prevent_initial_call=True
 )
-def update_columns(active_dataset):
-    if not active_dataset or 'data' not in active_dataset:
-        return [], []
-
-    dataset = active_dataset['dataset']
-    data = active_dataset['data']
+def update_columns(switch_value, ipv4_data, whois_ipv4_data):
     row_data = []
     column_defs = []
 
-    if dataset == 'ipv4':
-        row_data = ag_grid_handler.format_json_data_for_aggrid()
-        column_defs = ag_grid_handler.generate_column_definitions('json')
-    elif dataset == 'whoisv6':
-        row_data = ag_grid_handler.format_whois6_data_for_aggrid()
-        column_defs = ag_grid_handler.generate_column_definitions('whoisv6')
-    elif dataset == 'whoisv4':
-        row_data = ag_grid_handler.format_whois4_data_for_aggrid()
-        column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+    dataset = whois_ipv4_data if not switch_value else ipv4_data
+    if dataset and 'data' in dataset:
+        data_string = dataset['data']
+        # Check if the data stored is a string and needs parsing
+        if isinstance(data_string, str):
+            data = json.loads(data_string)
+        else:
+            data = data_string
+        
+    if not switch_value:
+        if ipv4_data:
+            row_data = ag_grid_handler.format_whois4_data_for_aggrid()
+            column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+    else:
+        if whois_ipv4_data:
+            row_data = ag_grid_handler.format_whois4_data_for_aggrid()
+            column_defs = ag_grid_handler.generate_column_definitions('json')
+
     return row_data, column_defs
 
 '''----------UI Element Logic----------'''
@@ -216,37 +288,50 @@ def update_columns(active_dataset):
 # This function will display information related to the graph that's currently on display in the graph tab.
 @app.callback(
     Output('dynamic-card-content', 'children'),
-    [Input('active-dataset', 'data'),
+    [Input('ipv4-dataset', 'data'),
+     Input('whois-ipv4-dataset', 'data'),
+     Input('ipv4-time-series-dataset', 'data'),
+     Input('ipv6-dataset', 'data'),
      Input('graph-tabs', 'value')],
     prevent_initial_call=True,
 )
-def update_dynamic_card_content(active_dataset, active_tab):
+def update_dynamic_card_content(ipv4_data, whois_ipv4_data, ipv4_time_series_data, ipv6_data, active_tab):
+    # Determine which dataset to display based on which data is currently available
+    # Assuming the first non-null dataset is the one related to the active button
+    active_dataset = ipv4_data if ipv4_data is not None else (
+        whois_ipv4_data if whois_ipv4_data is not None else (
+            ipv4_time_series_data if ipv4_time_series_data is not None else ipv6_data
+        )
+    )
+
+    print(active_tab, 'dyn_card_callback main')
+
+    if not active_dataset:
+        raise dash.exceptions.PreventUpdate
+
+    # Use the dynamic card handler to get the content for the active tab and dataset
     return dynamic_card_handler.get_content(active_dataset, active_tab)
 
 # This handles the button outline based on which button is pressed and not.
 @app.callback(
-    [Output('ipv4', 'className'),
-     Output('whoisv6', 'className'),
-     Output('whoisv4', 'className')],
-    [Input('ipv4', 'n_clicks'),
-     Input('whoisv6', 'n_clicks'),
-     Input('whoisv4', 'n_clicks')],
+    [Output('whoisv4', 'className'),
+     Output('whoisv6', 'className'),],
+    [Input('whoisv4', 'n_clicks'),
+     Input('whoisv6', 'n_clicks'),],
     prevent_initial_call=True,
 )
-def update_button_styles(n_ipv4, n_whoisv6, n_whoisv4):
+def update_button_styles(n_whoisv6, n_whoisv4):
     ctx = callback_context
     if not ctx.triggered:
         # When the app loads, set the initial style
-        return ["btn-primary", "btn-outline-primary", "btn-outline-primary"]
+        return ["btn-primary", "btn-outline-primary"]
     else:
         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        if button_id == "ipv4":
-            return ["btn-primary", "btn-outline-primary", "btn-outline-primary"]
+        if button_id == "whoisv4":
+            return ["btn-primary", "btn-outline-primary"]
         elif button_id == "whoisv6":
-            return ["btn-outline-primary", "btn-primary", "btn-outline-primary"]
-        elif button_id == "whoisv4":
-            return ["btn-outline-primary", "btn-outline-primary", "btn-primary"]
+            return ["btn-outline-primary", "btn-primary"]
 
 # Light/Dark Mode
 clientside_callback(
@@ -265,12 +350,11 @@ clientside_callback(
 '''----------Render the application----------'''    
 # App Layout
 app.layout = dbc.Container([
-    dcc.Store(id='active-dataset', storage_type='memory'),
     dcc.Store(id='ipv4-dataset', storage_type='memory'),
     dcc.Store(id='whois-ipv4-dataset', storage_type='memory'),
     dcc.Store(id='ipv4-time-series-dataset', storage_type='memory'),
     dcc.Store(id='ipv6-dataset', storage_type='memory'),
-    #dcc.Store(id='theme-store', data={'theme': dbc.themes.BOOTSTRAP}),
+
     # Header section
     dbc.Row([
         dbc.Col([
@@ -284,9 +368,9 @@ app.layout = dbc.Container([
                 dbc.Label(className='fa fa-sun', html_for='switch')
             ], className='sec1-button-column', style={'padding-right': '0.5rem', 'padding-bottom': '0.2rem'}),
             dbc.ButtonGroup([
-                dbc.Button("IPv4 Pool Data", id="ipv4", outline=True, className="btn-primary", n_clicks=0),
-                dbc.Button("WHOIS v6", id="whoisv6", outline=True, className="btn-outline-primary", n_clicks=0),
-                dbc.Button("WHOIS v4", id="whoisv4", outline=True, className="btn-outline-primary", n_clicks=0),
+                dbc.Button("IPv4", id="whoisv4", outline=True, className="btn-primary", n_clicks=0),
+                dbc.Button("IPv6", id="whoisv6", outline=True, className="btn-outline-primary", n_clicks=0),
+                #dbc.Button("WHOIS v4", id="whoisv4", outline=True, className="btn-outline-primary", n_clicks=0),
             ], className="mb-3")
         ], className='sec1-button-column', width={'size': 3}),
     ], className='section-1-container'),  # Adjusting header to take 8% of the height
@@ -319,6 +403,13 @@ app.layout = dbc.Container([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
+                    html.Div([
+                        html.H5('IPv4 Pool Data'),
+                        dbc.Label(className='', html_for='ag-switch'),
+                        dbc.Switch(id='ag-switch', value=True, className='d-inline-block ms-1', persistence=True),
+                        dbc.Label(className='IPv4 Whois Data', html_for='ag-switch'),
+                        html.H5('IPv4 WHOIS Data'),
+                    ], className='sec1-button-column', style={'padding-right': '0.5rem', 'padding-bottom': '0.2rem'}),
                     dbc.Container([
                         dag.AgGrid(
                         id='the-ag-grid',
