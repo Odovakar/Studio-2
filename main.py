@@ -15,9 +15,9 @@ from classes.hover_template_handler import HoverTemplateHandler
 from classes.dynamic_card_handler import DynamicCardHandler
 from classes.bar_chart_handler import BarChartHandler
 
-load_figure_template(["bootstrap", "bootstrap_dark"])
-dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
-roboto_font_url = "https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+load_figure_template(['bootstrap', 'bootstrap_dark'])
+dbc_css = 'https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css'
+roboto_font_url = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap'
 external_stylesheets = [
     dbc.themes.BOOTSTRAP,
     dbc.icons.FONT_AWESOME,
@@ -49,13 +49,13 @@ bar_chart_handler = BarChartHandler(data_handler)
 ag_grid_data = ag_grid_handler.format_json_data_for_aggrid()
 
 '''stuff for bug squashing'''
-#print("json_df columns:", json_df.columns.tolist())
+#print('json_df columns:', json_df.columns.tolist())
 #print(json_df.head())
 #usa_row_by_iso_alpha_3 = json_df.loc[json_df['iso_alpha_3'] == 'USA']
 #print(usa_row_by_iso_alpha_3)
 #print(json_df['iso_alpha_3'].unique())
 #unknown_rir_orig = json_df.loc[json_df['RIR'] == 'Unknown']
-#print("Original DataFrame with Unknown RIR:")
+#print('Original DataFrame with Unknown RIR:')
 #print(unknown_rir_orig[['country_code','iso_alpha_3', 'name', 'RIR']])
 #print(json_df['percentv4'].dtype)
 
@@ -129,7 +129,7 @@ def update_ipv6_dataset(n_whoisv6, ipv6_data):
         Input('ipv6-dataset', 'data'),
         Input('graph-tabs', 'value'),
         Input('choropleth-accordion-selector', 'active_item'),
-        Input("switch", "value")],
+        Input('switch', 'value')],
 )
 def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, active_item, switch_on):
     if active_tab != 'choropleth-tab':
@@ -160,7 +160,7 @@ def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, 
      Input('ipv6-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('scatter-selector-accordion', 'active_item'),
-     Input("switch", "value")],
+     Input('switch', 'value')],
     #prevent_initial_call=True,
 )
 def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scatter_selector_accordion, switch_on):
@@ -189,7 +189,7 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
      Input('ipv6-dataset', 'data'),
      Input('toggle-legend-button', 'n_clicks'),
      Input('graph-tabs', 'value'),
-     Input("switch", "value")],
+     Input('switch', 'value')],
 )
 def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, n_clicks, active_tab, switch_on):
     if active_tab != 'pie-tab':
@@ -223,7 +223,7 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, n_clic
      Input('ipv6-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('toggle-xaxis-scale-button', 'n_clicks'),
-     Input("switch", "value")],
+     Input('switch', 'value')],
     prevent_initial_call=True,
 )
 def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, n_clicks, switch_on):
@@ -262,24 +262,43 @@ def update_columns(switch_value, ipv4_data, whois_ipv4_data):
     column_defs = []
 
     dataset = whois_ipv4_data if not switch_value else ipv4_data
-    if dataset and 'data' in dataset:
-        data_string = dataset['data']
-        # Check if the data stored is a string and needs parsing
-        if isinstance(data_string, str):
-            data = json.loads(data_string)
-        else:
-            data = data_string
+    # if dataset and 'data' in dataset:
+    #     data_string = dataset['data']
+    #     # Check if the data stored is a string and needs parsing
+    #     if isinstance(data_string, str):
+    #         data = json.loads(data_string)
+    #     else:
+    #         data = data_string
         
     if not switch_value:
         if ipv4_data:
-            row_data = ag_grid_handler.format_whois4_data_for_aggrid()
-            column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+            row_data = ag_grid_handler.format_json_data_for_aggrid()
+            column_defs = ag_grid_handler.generate_column_definitions('json')
     else:
         if whois_ipv4_data:
             row_data = ag_grid_handler.format_whois4_data_for_aggrid()
-            column_defs = ag_grid_handler.generate_column_definitions('json')
+            column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
 
     return row_data, column_defs
+
+@app.callback(
+    Output('ag-pagination-component', 'max_value'),
+    Input('the-ag-grid', 'paginationInfo')
+)
+def update_pagination_control(pagination_info):
+    if pagination_info is None:
+        return dash.no_update
+    return pagination_info['totalPages']
+
+@app.callback(
+    Output('the-ag-grid', 'paginationGoTo'),
+    Input('ag-pagination-component', 'active_page'),
+    prevent_initial_call=True
+)
+def goto_page(n):
+    if n is None or n ==1:
+        return 'first'
+    return n - 1
 
 '''----------UI Element Logic----------'''
 # NOTE: The logic for the dynamic control card displayed on the left of the UI is handled in the
@@ -324,27 +343,27 @@ def update_button_styles(n_whoisv6, n_whoisv4):
     ctx = callback_context
     if not ctx.triggered:
         # When the app loads, set the initial style
-        return ["btn-primary", "btn-outline-primary"]
+        return ['btn-primary', 'btn-outline-primary']
     else:
         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
-        if button_id == "whoisv4":
-            return ["btn-primary", "btn-outline-primary"]
-        elif button_id == "whoisv6":
-            return ["btn-outline-primary", "btn-primary"]
+        if button_id == 'whoisv4':
+            return ['btn-primary', 'btn-outline-primary']
+        elif button_id == 'whoisv6':
+            return ['btn-outline-primary', 'btn-primary']
 
 # Light/Dark Mode
 clientside_callback(
-    """
+    '''
     (switchOn) => {
        switchOn
          ? document.documentElement.setAttribute('data-bs-theme', 'light')
          : document.documentElement.setAttribute('data-bs-theme', 'dark')
        return window.dash_clientside.no_update
     }
-    """,
-    Output("switch", "id"),
-    Input("switch", "value"),
+    ''',
+    Output('switch', 'id'),
+    Input('switch', 'value'),
 )
 
 '''----------Render the application----------'''    
@@ -368,12 +387,13 @@ app.layout = dbc.Container([
                 dbc.Label(className='fa fa-sun', html_for='switch')
             ], className='sec1-button-column', style={'padding-right': '0.5rem', 'padding-bottom': '0.2rem'}),
             dbc.ButtonGroup([
-                dbc.Button("IPv4", id="whoisv4", outline=True, className="btn-primary", n_clicks=0),
-                dbc.Button("IPv6", id="whoisv6", outline=True, className="btn-outline-primary", n_clicks=0),
-                #dbc.Button("WHOIS v4", id="whoisv4", outline=True, className="btn-outline-primary", n_clicks=0),
-            ], className="mb-3")
+                dbc.Button('IPv4', id='whoisv4', outline=True, className='btn-primary', n_clicks=0),
+                dbc.Button('IPv6', id='whoisv6', outline=True, className='btn-outline-primary', n_clicks=0),
+                #dbc.Button('WHOIS v4', id='whoisv4', outline=True, className='btn-outline-primary', n_clicks=0),
+            ], className='mb-3')
         ], className='sec1-button-column', width={'size': 3}),
     ], className='section-1-container'),  # Adjusting header to take 8% of the height
+    
     # Main content section
     dbc.Row([
         dbc.Col([
@@ -403,27 +423,46 @@ app.layout = dbc.Container([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.Div([
-                        html.H5('IPv4 Pool Data'),
-                        dbc.Label(className='', html_for='ag-switch'),
-                        dbc.Switch(id='ag-switch', value=True, className='d-inline-block ms-1', persistence=True),
-                        dbc.Label(className='IPv4 Whois Data', html_for='ag-switch'),
-                        html.H5('IPv4 WHOIS Data'),
-                    ], className='sec1-button-column', style={'padding-right': '0.5rem', 'padding-bottom': '0.2rem'}),
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Pagination(
+                                id='ag-pagination-component',
+                                first_last=True,
+                                previous_next=True,
+                                size='sm',
+                                fully_expanded=False,
+                                max_value=1
+                            )
+                        ]),
+                        dbc.Col([
+                            html.Div([
+                                html.H6('IPv4 Pool Data'),
+                                dbc.Switch(id='ag-switch', value=True, className='d-inline-block ms-1', persistence=True),
+                                html.H6('IPv4 WHOIS Data'),
+                            ], className='sec1-button-column', style={'padding-right': '0.5rem', 'padding-bottom': '0.2rem'}),
+                        ]),
+                    ]),  
+
                     dbc.Container([
                         dag.AgGrid(
-                        id='the-ag-grid',
-                        rowData=[],
-                        columnDefs=[],
-                        #className='ag-theme-balham',
-                        dashGridOptions={'pagination': True, 'paginationAutoPageSize': True},
-                        defaultColDef={
-                            'flex': 1,
-                            'minWidth': 100,
-                        },
-                        className="ag-theme-alpine",
-                    )
-                    ],fluid=True, className='dbc-ag-grid    ')
+                            id='the-ag-grid',
+                            rowData=[],
+                            columnDefs=[],
+                            className='ag-theme-alpine',
+                            style={'height': '27vh'},
+                            dashGridOptions={
+                                'pagination': True,
+                                'paginationAutoPageSize': True,
+                                'rowHeight': 28,
+                                'headerHeight': 40,
+                                'suppressPaginationPanel': True
+                            },
+                            defaultColDef={
+                                'flex': 1,
+                                'minWidth': 100,
+                            },
+                        )
+                    ],fluid=True, className='dbc-ag-grid grid-container')
                 ])
             ], className='h-100')
         ], width={'size': 10, 'offset': 1})

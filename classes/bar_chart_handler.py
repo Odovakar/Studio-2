@@ -76,8 +76,6 @@ class BarChartHandler:
         #     }
         # }
         if active_dataset.get('dataset') == 'ipv4':
-            #print('bar_chart_handler active dataset works')
-
             if active_item == 'RIR':
                 rir_sum = self.data_handler.json_df.groupby('RIR')['ipv4'].sum().reset_index() 
                 data_frame=rir_sum
@@ -86,12 +84,6 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    # 'width':'100vw',
-                    # 'height':'100vh',
-                    # 'xaxis':dict(
-                    #     rangeslider=dict(visible=True),
-                    #     type="category"
-                    # ),
                     'yaxis_type':toggle_xaxis_type,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
@@ -104,12 +96,6 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-40,
-                    # 'width':'100vw',
-                    # 'height':'100vh',
-                    # 'xaxis':dict(
-                    #     rangeslider=dict(visible=True),
-                    #     type="category"
-                    # ),
                     'yaxis_type':toggle_xaxis_type,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
@@ -123,12 +109,6 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    # 'width':'100vw',
-                    # 'height':'100vh',
-                    # 'xaxis':dict(
-                    #     rangeslider=dict(visible=True),
-                    #     type="category"
-                    # ),
                     'yaxis_type':toggle_xaxis_type,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
@@ -142,12 +122,6 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    # 'width':'100vw',
-                    # 'height':'100vh',
-                    # 'xaxis':dict(
-                    #     rangeslider=dict(visible=True),
-                    #     type="category"
-                    # ),
                     'yaxis_type':toggle_xaxis_type,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
@@ -161,12 +135,6 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    # 'width':'100vw',
-                    # 'height':'100vh',
-                    # 'xaxis':dict(
-                    #     rangeslider=dict(visible=True),
-                    #     type="category"
-                    # ),
                     'yaxis_type':toggle_xaxis_type,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
@@ -180,12 +148,6 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    # 'width':'100vw',
-                    # 'height':'100vh',
-                    # 'xaxis':dict(
-                    #     rangeslider=dict(visible=True),
-                    #     type="category"
-                    # ),
                     'yaxis_type':toggle_xaxis_type,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),

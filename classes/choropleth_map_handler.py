@@ -37,6 +37,7 @@ class ChoroplethHandler:
                 '1B+': 'rgb(250, 0, 196)'
             }
             return colors
+
     def generate_figure(self, active_item, active_dataset, switch_on):
         hover_template = self.hover_template_handler.get_hover_template(active_item)
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
@@ -52,14 +53,11 @@ class ChoroplethHandler:
             #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
         ), axis=-1)
 
-        # Choosing map-type based on value selected in dropdown menu
         if active_item=='normal':
-            # Generate the choropleth map
             colors=self.get_colorscale(active_item)
             hover_template = self.hover_template_handler.get_hover_template(active_item)
 
             map_fig = px.choropleth(
-                #autosize=True,
                 data_frame=self.data_handler.json_df,
                 locations='iso_alpha_3',
                 color='ipv4_grouping',
@@ -93,6 +91,8 @@ class ChoroplethHandler:
                 #margin={"r":5, "t":5, "l":5, "b":5},
             )
             map_fig.update_traces(hovertemplate=hover_template)
+            map_fig.update_geos(showframe=False, projection_type='equirectangular', lonaxis_range=[-180, 180], lataxis_range=[-60, 90])
+            map_fig.update_layout()
             return map_fig
         elif active_item=='log':
             # Generate the choropleth map
@@ -129,7 +129,6 @@ class ChoroplethHandler:
                     len=0.5,  
                 ),
                 template=template
-                #margin={"r":5, "t":5, "l":5, "b":5},
             )
             map_fig.update_traces(hovertemplate=hover_template)
 

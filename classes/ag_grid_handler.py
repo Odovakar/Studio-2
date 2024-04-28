@@ -52,21 +52,12 @@ class AgGridHandler:
                 {'field': 'RIR', 'headerName': 'RIR', 'sortable': True, 'filter': True},
                 {'field': 'log_ipv4', 'headerName': 'Log of IPv4', 'sortable': True, 'filter': True}
             ]
-        elif data_type == 'netlist':
-            pass
-            # return [
-            #     {'field': 'Start', 'headerName': 'Start', 'sortable': True, 'filter': True},
-            #     {'field': 'End', 'headerName': 'End', 'sortable': True, 'filter': True},
-            #     {'field': 'RIR', 'headerName': 'RIR', 'sortable': True, 'filter': True},
-            #     {'field': 'Nr of IPs', 'headerName': 'Number of IPs', 'sortable': True, 'filter': True}
-            # ]
         elif data_type == 'whoisv4':
             return [
                 {'field': 'Country', 'headerName': 'Country', 'sortable': True, 'filter': True},
                 {'field': 'Population', 'headerName': 'Population', 'sortable': True, 'filter': True},
                 {'field': 'Registry', 'headerName': 'Registry', 'sortable': True, 'filter': True},
                 {'field': 'Start', 'headerName': 'Start IP', 'sortable': True, 'filter': True},
-                #{'field': 'Type', 'headerName': 'Type', 'sortable': True, 'filter': True},
                 {'field': 'Value', 'headerName': 'Assigned IPs', 'sortable': True, 'filter': True},
                 {'field': 'Year', 'headerName': 'Year', 'sortable': True, 'filter': True},
                 {'field': 'Status', 'headerName': 'Status', 'sortable': True, 'filter': True},

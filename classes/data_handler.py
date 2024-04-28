@@ -14,7 +14,6 @@ class DataHandler:
         self.whois_ipv4_df = None
         self.ipv4_ts_df = None
 
-
     def fetch_json_data(self):
         response = requests.get(self.json_url)
         if response.status_code == 200:
@@ -28,7 +27,6 @@ class DataHandler:
                 print("DataFrame is empty after processing.")
         else:
             print("Failed to fetch data: HTTP", response.status_code)
-
 
     def load_population_data(self):
         try:

@@ -74,11 +74,9 @@ class DynamicCardHandler:
                         title = 'Regional Internet Registry\'s Percent of Pool'
                     ),
                 ]
-
                 # Instantiating Contents
                 #card_contents = self.get_accordion('Stuff about the choropleth map')
                 card_controls = self.get_accordion(title, id, accordion_options)
-                
 
                 # Returning Contents
                 return html.Div([
@@ -187,7 +185,6 @@ class DynamicCardHandler:
                 # Return Contents
                 return card_controls, toggle_button
         
-    
         elif active_tab == 'bar-tab':
             #print(active_tab, 'we\'re here in the dyn card conditional')
             if dataset == 'ipv4':
