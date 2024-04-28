@@ -233,5 +233,17 @@ class DynamicCardHandler:
                 toggle_button = self.get_scale_toggle_button()
                 return card_controls, toggle_button
         elif active_tab == 'custom-tab':
-            return html.Div([html.H4('IPv4 Custom Chart Insights'), html.P('Details and actions related to the IPv4 Custom Chart.')])
+            if dataset == 'ipv4' or 'whoisv4':
+                id = 'custom-graph-accordion'
+                title = 'Graph Options'
+                accordion_options = [
+                    dbc.AccordionItem(
+                        'Testing Custom',
+                        item_id='TEST',
+                        title='Testing Custom Graph'
+                    ),
+                ]
+                card_controls = self.get_accordion(title, id, accordion_options)
+
+                return card_controls
         return 'Invalid tab selection.'

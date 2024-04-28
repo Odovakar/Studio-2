@@ -410,7 +410,7 @@ app.layout = dbc.Container([
                             dcc.Tab(label='Scatter Plot', value='scatter-tab', children=[dcc.Graph(id='the-scatter-plot', style={'height':'45vh'}, className='dbc')], className='tab-content dbc'),
                             dcc.Tab(label='Pie Chart', value='pie-tab', children=[dcc.Graph(id='the-pie-chart', style={'height':'45vh'})], className='tab-content'),
                             dcc.Tab(label='Bar Chart', value='bar-tab', children=[dcc.Graph(id='the-bar-chart', style={'height':'45vh'})], className='tab-content'),
-                            dcc.Tab(label='Custom Graph', value='custom-tab', children=[dcc.Graph(id='the-custom-chart')], className='tab-content dbc'),
+                            dcc.Tab(label='Custom Graph', value='custom-tab', children=[dcc.Graph(id='the-custom-chart', figure={})], className='tab-content dbc'),
                         ], className='sec2-graph-tabs')  # Classname sets tab width
                 ], className='sec2-card-body')
             ], className='sec2-tab-card'),
@@ -450,16 +450,22 @@ app.layout = dbc.Container([
                             columnDefs=[],
                             className='ag-theme-alpine',
                             style={'height': '27vh'},
+                            columnSize='sizeToFit',
+
                             dashGridOptions={
                                 'pagination': True,
-                                'paginationAutoPageSize': True,
+                                #'paginationAutoPageSize': True,
                                 'rowHeight': 28,
                                 'headerHeight': 40,
-                                'suppressPaginationPanel': True
+                                'suppressPaginationPanel': True,
+                                'rowSelection': 'multiple',
+                                'animateRows': False,
+                                'suppressScrollOnNewData':True,
                             },
                             defaultColDef={
                                 'flex': 1,
                                 'minWidth': 100,
+                                'filter': True,
                             },
                         )
                     ],fluid=True, className='dbc-ag-grid grid-container')
