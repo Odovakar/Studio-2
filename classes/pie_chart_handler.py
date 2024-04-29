@@ -41,7 +41,7 @@ class PieChartHandler:
             return None
 
 
-    def generate_figure(self, active_item, active_dataset, switch_on, show_legend=True, opacity=1.0):
+    def generate_figure(self, active_item, active_dataset, switch_on, show_legend=True):#, show_legendshow_legend=True, , opacity=1.0
         df = None
         values = None
         names = None
@@ -49,7 +49,7 @@ class PieChartHandler:
         hover_template = None
         hover_data = None
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
-
+        opacity = 0.5 if show_legend else 1.0
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item)
        # customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
@@ -131,7 +131,7 @@ class PieChartHandler:
                 )
                 layout_options = {
                     #'template': template,
-                    #'showlegend': show_legend,
+                    'showlegend': show_legend,
                     'margin': dict(t=50, b=50, l=50, r=50),
                     'uniformtext_mode': 'hide',
                     'uniformtext_minsize': 12,

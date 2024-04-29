@@ -46,6 +46,7 @@ class AgGridHandler:
         if data_type == 'json':
             return [
                 {'field': 'name', 'headerName': 'Country', 'sortable': True, 'filter': True},
+                {'field': 'pop', 'headerName': 'Population', 'sortable': True, 'filter': True},
                 {'field': 'ipv4', 'headerName': 'Nr of IPv4 Addresses', 'sortable': True, 'filter': True},
                 {'field': 'pcv4', 'headerName': 'IPv4 per Capita', 'sortable': True, 'filter': True},
                 {'field': 'percentv4', 'headerName': 'Pct Total of v4 Pool', 'sortable': True, 'filter': True},

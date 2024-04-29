@@ -2,9 +2,7 @@ import dash
 from dash import Dash, html, dcc, Input, Output, State, callback_context, clientside_callback, Patch
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
-import plotly.io as pio
 from dash_bootstrap_templates import load_figure_template
-import json
 
 from classes.data_handler import DataHandler
 from classes.pie_chart_handler import PieChartHandler
@@ -14,6 +12,7 @@ from classes.choropleth_map_handler import ChoroplethHandler
 from classes.hover_template_handler import HoverTemplateHandler
 from classes.dynamic_card_handler import DynamicCardHandler
 from classes.bar_chart_handler import BarChartHandler
+from classes.custom_chart_handler import CustomChartHandler
 
 load_figure_template(['bootstrap', 'bootstrap_dark'])
 dbc_css = 'https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css'
@@ -44,6 +43,7 @@ scatter_plot_handler = ScatterHandler(data_handler)
 choropleth_map_handler = ChoroplethHandler(data_handler, hover_template_handler)
 dynamic_card_handler = DynamicCardHandler(data_handler)
 bar_chart_handler = BarChartHandler(data_handler)
+custom_chart_handler = CustomChartHandler(data_handler)
 
 # Prepping data for the ag_grid
 ag_grid_data = ag_grid_handler.format_json_data_for_aggrid()
@@ -182,16 +182,17 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
 
 '''----------Pie Chart----------'''
 @app.callback(
-    Output('the-pie-chart', 'figure'),
-    [Input('pie-selector-accordion', 'active_item'),  # Consider this as the selector for dataset types if possible
+    [Output('the-pie-chart', 'figure'),
+     Output('active-accordion-item-store', 'data')],
+    [Input('pie-selector-accordion', 'active_item'),
      Input('ipv4-dataset', 'data'),
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
-     Input('toggle-legend-button', 'n_clicks'),
      Input('graph-tabs', 'value'),
-     Input('switch', 'value')],
+     Input('switch', 'value'),
+     Input('toggle-legend-store', 'data')]
 )
-def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, n_clicks, active_tab, switch_on):
+def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, switch_on, show_legend):# , show_legendn_clicks, , show_legend
     if active_tab != 'pie-tab':
         raise dash.exceptions.PreventUpdate
 
@@ -207,17 +208,24 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, n_clic
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
 
-    # Toggle the legend display based on button clicks
-    show_legend = n_clicks % 2 == 1 if n_clicks is not None else False
-    opacity = 0.5 if show_legend else 1.0
+    #print("Updating Store with:", {'active_item': active_item})
+    figure = pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend) #, show_legendshow_legend, , opacity, show_legend
+    return figure, {'active_item': active_item}
 
-    # Assuming pie_chart_handler can accept a dataset directly
-    return pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend, opacity)
+@app.callback(
+    Output('toggle-legend-store', 'data'),
+    [Input('toggle-legend-button', 'n_clicks')],
+    [State('toggle-legend-store', 'data')]
+)
+def toggle_legend_visibility(n_clicks, current_legend_state):
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
+    return not current_legend_state  # Toggle between True and False
 
 '''----------Bar Chart----------'''
 @app.callback(
     Output('the-bar-chart', 'figure'),
-    [Input('bar-selector-accordion', 'active_item'),  # This could be used to choose dataset type
+    [Input('bar-selector-accordion', 'active_item'),
      Input('ipv4-dataset', 'data'),
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
@@ -230,7 +238,6 @@ def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_
     if active_tab != 'bar-tab':
         raise dash.exceptions.PreventUpdate
 
-    # Determine which dataset is currently active based on UI controls or other logic
     active_dataset = None
     if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC':
         active_dataset = ipv4_data
@@ -248,6 +255,32 @@ def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_
     # Assuming bar_chart_handler can accept a dataset directly
     return bar_chart_handler.generate_figure(active_item, active_dataset, toggle_xaxis_type, switch_on)
 
+'''----------Custom Graph Stuff----------'''
+@app.callback(
+    Output('the-custom-chart', 'figure'),
+    [Input('the-ag-grid', 'virtualRowData'),
+     Input('ipv4-dataset', 'data'),
+     Input('whois-ipv4-dataset', 'data'),
+     Input('ipv6-dataset', 'data'),
+     Input('graph-tabs', 'value'),
+     Input('custom-graph-accordion', 'active_item'),
+     Input('switch', 'value')]
+)
+def update_custom_graph(virtual_row_data, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, active_item, switch_on):
+    if active_tab != 'custom-tab':
+        raise dash.exceptions.PreventUpdate
+    if ipv4_data == None:
+        print('dataset none')
+
+    #print(ipv4_data) 
+    #print(active_tab, 'cust graph callback') this is good
+    active_dataset = None
+    if virtual_row_data:
+        if active_item == 'TEST':
+            active_dataset = ipv4_data
+            #print(active_dataset)
+    return custom_chart_handler.generate_figure(virtual_row_data, active_item, active_dataset, switch_on)
+
 '''----------AG Grid Stuff----------'''
 @app.callback(
     [Output('the-ag-grid', 'rowData'),
@@ -262,13 +295,6 @@ def update_columns(switch_value, ipv4_data, whois_ipv4_data):
     column_defs = []
 
     dataset = whois_ipv4_data if not switch_value else ipv4_data
-    # if dataset and 'data' in dataset:
-    #     data_string = dataset['data']
-    #     # Check if the data stored is a string and needs parsing
-    #     if isinstance(data_string, str):
-    #         data = json.loads(data_string)
-    #     else:
-    #         data = data_string
         
     if not switch_value:
         if ipv4_data:
@@ -311,25 +337,41 @@ def goto_page(n):
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv4-time-series-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
-     Input('graph-tabs', 'value')],
+     Input('graph-tabs', 'value'),
+     ],#Input('active-accordion-item-store', 'data')
     prevent_initial_call=True,
 )
-def update_dynamic_card_content(ipv4_data, whois_ipv4_data, ipv4_time_series_data, ipv6_data, active_tab):
+def update_dynamic_card_content(ipv4_data, whois_ipv4_data, ipv4_time_series_data, ipv6_data, active_tab):#, store_data
     # Determine which dataset to display based on which data is currently available
-    # Assuming the first non-null dataset is the one related to the active button
     active_dataset = ipv4_data if ipv4_data is not None else (
         whois_ipv4_data if whois_ipv4_data is not None else (
             ipv4_time_series_data if ipv4_time_series_data is not None else ipv6_data
         )
     )
-
-    print(active_tab, 'dyn_card_callback main')
-
+    
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
-
-    # Use the dynamic card handler to get the content for the active tab and dataset
+    
     return dynamic_card_handler.get_content(active_dataset, active_tab)
+
+@app.callback(
+    Output('dynamic-button-div', 'children'),
+    [Input('active-accordion-item-store', 'data'),
+     Input('graph-tabs', 'value')],
+)
+def update_dynamic_toggle_button(store_data, active_tab):
+    print("Store Data Received:", store_data)
+    print("Active Tab:", active_tab)
+
+    if not store_data or 'active_item' not in store_data:
+        print("Data store is empty or incorrect structure.")
+        return html.Div("No item selected or incorrect data store format.")
+
+    active_item = store_data['active_item']
+
+    # Call the method to generate buttons based on the current state
+    return dynamic_card_handler.get_control_buttons(active_item, active_tab)
+
 
 # This handles the button outline based on which button is pressed and not.
 @app.callback(
@@ -373,6 +415,9 @@ app.layout = dbc.Container([
     dcc.Store(id='whois-ipv4-dataset', storage_type='memory'),
     dcc.Store(id='ipv4-time-series-dataset', storage_type='memory'),
     dcc.Store(id='ipv6-dataset', storage_type='memory'),
+    dcc.Store(id='intermediate-data-from-grid', storage_type='memory'),
+    dcc.Store(id='active-accordion-item-store', data={'active_item': 'log'}),
+    dcc.Store(id='toggle-legend-store', data=False),
 
     # Header section
     dbc.Row([
@@ -397,7 +442,12 @@ app.layout = dbc.Container([
     # Main content section
     dbc.Row([
         dbc.Col([
-            dbc.Card(id='dynamic-card-content', className='sec2-dynamic-card'),#, style={'padding': '20px'}
+            dbc.Card([
+                dbc.CardBody([
+                    html.Div(id='dynamic-card-content', className='dynamic-card'),
+                    html.Div(id='dynamic-button-div', className='dynamic-button')
+                ]),
+            ], className='sec2-dynamic-card'),
         ], width={'size': 2, 'offset': 1}),
         dbc.Col([
             dbc.Card([
@@ -449,14 +499,13 @@ app.layout = dbc.Container([
                             rowData=[],
                             columnDefs=[],
                             className='ag-theme-alpine',
-                            style={'height': '27vh'},
+                            style={'height': '25vh'},
                             columnSize='sizeToFit',
-
                             dashGridOptions={
                                 'pagination': True,
                                 #'paginationAutoPageSize': True,
                                 'rowHeight': 28,
-                                'headerHeight': 40,
+                                'headerHeight': 35,
                                 'suppressPaginationPanel': True,
                                 'rowSelection': 'multiple',
                                 'animateRows': False,

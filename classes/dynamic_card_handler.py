@@ -28,6 +28,26 @@ class DynamicCardHandler:
             dbc.Button('Toggle Legend', id='toggle-legend-button', className='toggle-legend-button', n_clicks=0)
         ])#, style={'justify-content': 'flex-end'}
 
+    def get_toggle_group(self):
+        return html.Div([
+            dbc.ButtonGroup([
+                dbc.Button('Top 5', id='top5', outline=True, className='btn-outline-primary', n_clicks=0),
+                dbc.Button('Toggle Legend', id='toggle-legend-button', className='btn-primary', n_clicks=0),
+                dbc.Button('Bottom 5', id='bottom5', outline=True, className='btn-outline-primary', n_clicks=0),
+            ])
+        ])
+
+    def get_control_buttons(self, active_item, active_tab):
+        print(f"Generating controls for {active_item} on {active_tab}")
+        if active_tab == 'pie-tab':
+            if active_item == 'SUNBURST':
+                return html.Div("Sunburst specific controls")
+            elif active_item in ['TotalPool', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'RIR']:
+                return dbc.Button('Toggle Legend', id='toggle-legend-button')
+            else:
+                return html.Div("No specific controls available for this item.")
+        return html.Div("This tab has no controls.")
+
     def get_accordion(self, title, id, accordion_options, **kwargs):
         return html.Div([
             html.H4(f'{title}'),#, style={'margin-bottom': '5px'}
@@ -47,16 +67,23 @@ class DynamicCardHandler:
                 n_clicks=0
             ),
         ])
+    
+    def get_buttons(self, active_item, active_tab):
+        active_item = active_item.get('active_item')
+        #print(active_item, active_tab)
+        if active_tab == 'pie-tab':
+            if active_item == 'SUNBURST':
+                return print('this works')
 
-    # NOTE: When passing i.e., dropdown_options in an array, make sure to omit trailing commas,
-    # so that it's interpreted as a list and not a tuple.
     def get_content(self, active_dataset, active_tab):
         if not active_dataset or 'data' not in active_dataset:
             return "Please select a dataset and ensure data is loaded."
-        #print(active_tab, 'active tab present in dyn_card_handler')
-        active_item = None
+
+
         dataset = active_dataset.get('dataset')
-        print(dataset, 'in choropleth dynamic card handler')
+        toggle_button = None
+
+
         # CHOROPLETH TAB
         if active_tab == 'choropleth-tab':
                 # Intantianiating Keywords
@@ -89,10 +116,6 @@ class DynamicCardHandler:
                 # Intantianiating Keywords
                 title = 'Scatter Plot Options'
                 id = 'scatter-selector-accordion'
-                # dropdown_options = [
-                #     {'label': 'Logarithmic Visualisation', 'value': 'log'},
-                #     {'label': 'Normal Visualisation', 'value': 'normal'}
-                # ]
                 accordion_options = [
                     dbc.AccordionItem(
                         'The scatter plot visualises the population in the x-axis and number of ipv4 addresses in the y-axis. The size of the plot is related to the cumulative sum of ipv4 addresses attributed to the distinct country. LOGx TODO: Fiks det her!',
@@ -138,6 +161,11 @@ class DynamicCardHandler:
                 id = 'pie-selector-accordion'
                 accordion_options = [
                     dbc.AccordionItem(
+                        'This chart displays the percentage wise distribution of IPv4 addresses between the countries within the AFRINIC region.',
+                        item_id='SUNBURST',
+                        title='All countries sunburst IPv4 Country Distribution',
+                    ),
+                    dbc.AccordionItem(
                         'This chart shows the total pool of allocated ipv4 addresses by country',
                         item_id = 'TotalPool',
                         title='Total IPv4 Pool Distribution by Country',
@@ -172,18 +200,12 @@ class DynamicCardHandler:
                         item_id='AFRINIC',
                         title='AFRINIC IPv4 Country Distribution'
                     ),
-                    dbc.AccordionItem(
-                        'This chart displays the percentage wise distribution of IPv4 addresses between the countries within the AFRINIC region.',
-                        item_id='SUNBURST',
-                        title='All countries sunburst IPv4 Country Distribution'
-                    ),
                 ]
-                #Instantiating Contents
-                card_controls = self.get_accordion(title, id, accordion_options)
-                toggle_button = self.get_toggle_button()
 
-                # Return Contents
-                return card_controls, toggle_button
+
+                card_controls = self.get_accordion(title, id, accordion_options)
+                #toggle_button = self.get_toggle_button()
+                return card_controls
         
         elif active_tab == 'bar-tab':
             #print(active_tab, 'we\'re here in the dyn card conditional')
@@ -233,7 +255,9 @@ class DynamicCardHandler:
                 toggle_button = self.get_scale_toggle_button()
                 return card_controls, toggle_button
         elif active_tab == 'custom-tab':
+            #print('we are in the dyn card elif active tab conditional') both of these are good
             if dataset == 'ipv4' or 'whoisv4':
+                #print('we are in the dyn card in the if dataset conditional')
                 id = 'custom-graph-accordion'
                 title = 'Graph Options'
                 accordion_options = [
