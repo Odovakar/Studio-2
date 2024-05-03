@@ -187,9 +187,11 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
      Input('ipv6-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('switch', 'value'),
-     Input('toggle-legend-store', 'data')]
+     Input('toggle-legend-store', 'data'),
+     Input('view-mode-store', 'data'),
+     Input('log-scale-store', 'data')]
 )
-def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, switch_on, show_legend):# , show_legendn_clicks, , show_legend
+def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, switch_on, show_legend, view_mode_data, log_scale_data):# , show_legendn_clicks, , show_legend
     if active_tab != 'pie-tab':
         raise dash.exceptions.PreventUpdate
 
@@ -204,9 +206,19 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active
 
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
+    
+        # Check for None in inputs
+    if show_legend is None:
+        show_legend = True
+    if view_mode_data is None:
+        view_mode_data = {'view_mode': 'all'}
+
+    log_scale_active = log_scale_data['log_scale_active'] if log_scale_data else False
+    print("Log scale active state received in pie chart callback:", log_scale_active)
 
     #print("Updating Store with:", {'active_item': active_item})
-    figure = pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend) #, show_legendshow_legend, , opacity, show_legend
+    view_mode = view_mode_data['view_mode']
+    figure = pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend, view_mode, log_scale_active) #, show_legendshow_legend, , opacity, show_legend
     return figure#, {'active_item': active_item}
 
 @app.callback(
@@ -217,7 +229,50 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active
 def toggle_legend_visibility(n_clicks, current_legend_state):
     if n_clicks is None:
         raise dash.exceptions.PreventUpdate
-    return not current_legend_state  # Toggle between True and False
+    # Check if current state is None and set default
+    if current_legend_state is None:
+        current_legend_state = False
+    return not current_legend_state
+
+@app.callback(
+    Output('view-mode-store', 'data'),
+    [Input('top10-button', 'n_clicks'),
+     Input('bottom10-button', 'n_clicks')],
+    [State('view-mode-store', 'data')]
+)
+def update_view_mode(top10_clicks, bottom10_clicks, current_view_mode):
+    if not current_view_mode:  # Ensuring there's always a valid state
+        current_view_mode = {'view_mode': 'all'}
+
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise dash.exceptions.PreventUpdate
+
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    if button_id == 'top10-button':
+        new_mode = 'top10' if current_view_mode['view_mode'] != 'top10' else 'all'
+    elif button_id == 'bottom10-button':
+        new_mode = 'bottom10' if current_view_mode['view_mode'] != 'bottom10' else 'all'
+    else:
+        return dash.no_update
+
+    return {'view_mode': new_mode}
+
+@app.callback(
+    Output('log-scale-store', 'data'),
+    [Input('toggle-log-button', 'n_clicks')],
+    [State('log-scale-store', 'data')]
+)
+def toggle_log_scale(n_clicks, log_scale_state):
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
+
+    current_state = log_scale_state['log_scale_active'] if log_scale_state else False
+    new_state = not current_state
+    print("Log scale toggle clicked, current state:", current_state)
+    print("New log scale state:", new_state)
+    return {'log_scale_active': new_state}
 
 @app.callback(
     Output('active-accordion-item-store', 'data'),
@@ -453,6 +508,7 @@ clientside_callback(
 '''----------Render the application----------'''    
 # App Layout
 app.layout = dbc.Container([
+    # State Storages
     dcc.Store(id='ipv4-dataset', storage_type='memory'),
     dcc.Store(id='whois-ipv4-dataset', storage_type='memory'),
     dcc.Store(id='ipv4-time-series-dataset', storage_type='memory'),
@@ -462,6 +518,8 @@ app.layout = dbc.Container([
     dcc.Store(id='bar-accordion-store'),
     dcc.Store(id='toggle-legend-store', data=False),
     dcc.Store(id='toggle-axis-store', data='linear'),
+    dcc.Store(id='view-mode-store', data={'view_mode': 'all'}),
+    dcc.Store(id='log-scale-store', data={'log_scale_active': False}),
 
     # Header section
     dbc.Row([

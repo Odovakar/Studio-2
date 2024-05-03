@@ -28,21 +28,29 @@ class DynamicCardHandler:
             dbc.Button('Toggle Legend', id='toggle-legend-button', className='toggle-legend-button', n_clicks=0)
         ])#, style={'justify-content': 'flex-end'}
 
-    def get_toggle_group(self):
-        return html.Div([
-            dbc.ButtonGroup([
-                dbc.Button('Top 5', id='top5', outline=True, className='btn-outline-primary', n_clicks=0),
-                dbc.Button('Toggle Legend', id='toggle-legend-button', className='btn-primary', n_clicks=0),
-                dbc.Button('Bottom 5', id='bottom5', outline=True, className='btn-outline-primary', n_clicks=0),
-            ])
-        ])
+    # def get_toggle_group(self):
+    #     return html.Div([
+    #         dbc.ButtonGroup([
+    #             dbc.Button('Top 5', id='top5', outline=True, className='btn-outline-primary', n_clicks=0),
+    #             dbc.Button('Toggle Legend', id='toggle-legend-button', className='btn-primary', n_clicks=0),
+    #             dbc.Button('Bottom 5', id='bottom5', outline=True, className='btn-outline-primary', n_clicks=0),
+    #         ])
+    #     ])
 
     def get_control_buttons(self, active_item, active_tab):
         #print(f"Generating controls for {active_item} on {active_tab}")
         if active_tab == 'pie-tab':
             if active_item == 'SUNBURST':
                 return html.Div()
-            elif active_item in ['TotalPool', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'RIR']:
+            elif active_item == 'TotalPool':
+                button_group = dbc.ButtonGroup([
+                                    dbc.Button("Top 10", id="top10-button", className="btn-primary"),
+                                    dbc.Button("Legend", id="toggle-legend-button", className="btn-light"),
+                                    dbc.Button("Log", id="toggle-log-button", className="btn-secondary"),
+                                    dbc.Button("Bottom 10", id="bottom10-button", className="btn-primary")
+                                ], className="mb-2")
+                return button_group
+            elif active_item in ['ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'RIR']:
                 return dbc.Button('Toggle Legend', id='toggle-legend-button')
             else:
                 return html.Div()

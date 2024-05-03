@@ -44,7 +44,7 @@ class PieChartHandler:
     def get_hover_label():
         hovertemplate = "<b>%{label}</b><br>Population: %{customdata[1]:,}<br>IPv4: %{customdata[2]:,}"
 
-    def generate_figure(self, active_item, active_dataset, switch_on, show_legend=True):#, show_legendshow_legend=True, , opacity=1.0
+    def generate_figure(self, active_item, active_dataset, switch_on, show_legend=True, view_mode='all', log_scale_active=False):#, show_legendshow_legend=True, , opacity=1.0
         df = None
         values = None
         names = None
@@ -54,9 +54,10 @@ class PieChartHandler:
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
         opacity = 0.5 if show_legend else 1.0
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item)
-       # customdata = self.populate_custom_data(active_item, active_dataset)
+        #customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
         # print(active_item, active_dataset.get('dataset'))
+        print("Log scale active:", log_scale_active)
         trace_options = {
             'textposition': 'inside',
             'opacity': opacity,
@@ -87,14 +88,25 @@ class PieChartHandler:
             #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
         ), axis=-1)
 
-
+        value_column = 'log_percentv4' if log_scale_active else 'percentv4'
+        print("Using column for values:", value_column)
         if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'TotalPool':
+                
+                df = self.data_handler.json_df
+                #print("View Mode before conditional:", view_mode)
                 #print('it works')
+                if view_mode == 'top10':
+                    df = df.nlargest(10, 'percentv4')
+                elif view_mode == 'bottom10':
+                    df = df.nsmallest(10, 'percentv4')
+                    #print(df.tail(10))
+                #print("View Mode afcter:", view_mode)
+                #print("Data preview:", df.head())
                 customdata = self.populate_custom_data(active_item, active_dataset)
                 hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
-                df = self.data_handler.json_df
-                values = 'percentv4'
+                
+                values = value_column
                 names = 'name'
             elif active_item == 'RIR':
                 df = self.calculate_rir_percentages()
