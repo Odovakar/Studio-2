@@ -85,7 +85,9 @@ class DataHandler:
         json_df['RIR'] = json_df['iso_alpha_3'].apply(self.alpha3_to_rir)
         json_df['log_ipv4'] = np.log10(json_df['ipv4'] + 1)
         json_df['log_percentv4'] = np.log10(json_df['percentv4'] + 1)
-        print(json_df.columns.tolist())
+        #print(json_df.columns.tolist())
+        #print(json_df['log_percentv4'].tail(10))
+        #print(json_df.nsmallest(5, 'percentv4')[['name', 'percentv4', 'log_percentv4']])
         #print(json_df.dtypes)
         return json_df
 

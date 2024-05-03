@@ -57,11 +57,20 @@ class PieChartHandler:
         #customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
         # print(active_item, active_dataset.get('dataset'))
+        customdata = np.stack((
+            self.data_handler.json_df['name'],          # Country name
+            self.data_handler.json_df['ipv4'],          # IPv4 address count
+            self.data_handler.json_df['pop'],           # Population size
+            self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
+            self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
+            #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
+        ), axis=-1)
+
         print("Log scale active:", log_scale_active)
         trace_options = {
             'textposition': 'inside',
             'opacity': opacity,
-            'hovertemplate': hover_template
+            #'hovertemplate': hover_template
         }
         #layout_options = {'showlegend': True, 'margin': dict(t=50, b=50, l=50, r=50), 'uniformtext_mode': 'hide', 'uniformtext_minsize': 12, 'height': 400, 'width': 400}
         layout_options = {
@@ -79,21 +88,15 @@ class PieChartHandler:
                 'bordercolor':'rgba(255, 255, 255, 0)'
             }
         }
-        customdata = np.stack((
-            self.data_handler.json_df['name'],          # Country name
-            self.data_handler.json_df['ipv4'],          # IPv4 address count
-            self.data_handler.json_df['pop'],           # Population size
-            self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
-            self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
-            #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
-        ), axis=-1)
 
         value_column = 'log_percentv4' if log_scale_active else 'percentv4'
-        print("Using column for values:", value_column)
+        #print("Using column for values:", value_column)
         if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'TotalPool':
                 
                 df = self.data_handler.json_df
+                log_values = np.log10(df['percentv4'] + 0.0001)
+                df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
                 #print("View Mode before conditional:", view_mode)
                 #print('it works')
                 if view_mode == 'top10':
@@ -103,8 +106,18 @@ class PieChartHandler:
                     #print(df.tail(10))
                 #print("View Mode afcter:", view_mode)
                 #print("Data preview:", df.head())
-                customdata = self.populate_custom_data(active_item, active_dataset)
-                hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
+                hover_data={
+                    'name': True,
+                    'ipv4': ':,.0f',
+                    'pop': ':,.0f',
+                    'percentv4': ':.2f',
+                    #'pcv4': ':.2f',
+                    #'iso_alpha_3': False,
+                    #'ipv4_grouping': True,
+                    #'log_ipv4': False
+                }
+                #customdata = self.populate_custom_data(active_item, active_dataset)
+                #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
                 
                 values = value_column
                 names = 'name'
@@ -234,7 +247,13 @@ class PieChartHandler:
             values = 'Start' 
             names = 'Registry'
 
-        pie_fig = px.pie(df, values=values, names=names, color_discrete_sequence=px.colors.qualitative.Pastel) #, custom_data=customdata, hover_data=hover_data
+        pie_fig = px.pie(
+            df,
+            values=values,
+            names=names,
+            color_discrete_sequence=px.colors.qualitative.Pastel,
+            hover_data=hover_data,
+        ) #, custom_data=customdata, hover_data=hover_data
         pie_fig.update_traces(**trace_options)
         pie_fig.update_layout(**layout_options)
         return pie_fig

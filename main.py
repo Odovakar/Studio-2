@@ -39,7 +39,7 @@ data_handler.create_time_series_df()
 hover_template_handler = HoverTemplateHandler(data_handler)
 pie_chart_handler = PieChartHandler(data_handler, hover_template_handler)
 ag_grid_handler = AgGridHandler(data_handler)
-scatter_plot_handler = ScatterHandler(data_handler)
+scatter_plot_handler = ScatterHandler(data_handler)#, hover_template_handler
 choropleth_map_handler = ChoroplethHandler(data_handler, hover_template_handler)
 dynamic_card_handler = DynamicCardHandler(data_handler)
 bar_chart_handler = BarChartHandler(data_handler)

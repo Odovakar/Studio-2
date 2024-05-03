@@ -6,23 +6,23 @@ class ChoroplethHandler:
         self.data_handler = data_handler
         self.hover_template_handler = hover_template_handler
 
-    def get_hovertemplate(self, choropleth_accordion_selector):
-        if choropleth_accordion_selector=='grouped':
-            hover_template='<b>%{customdata[0]}</b><br>' + \
-                        'IPv4: %{customdata[1]:,.0f}<br>' + \
-                        'Population: %{customdata[2]:,.0f}<br>' + \
-                        'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
-                        'IPv4 per Cap: %{customdata[4]:.2f}%' + \
-                        '<extra>IPv4 Grouping: %{customdata[6]}</extra>'
-            return hover_template
-        elif choropleth_accordion_selector=='log':
-            hover_template='<b>%{customdata[0]}</b><br>' + \
-                        'IPv4: %{customdata[1]:,.0f}<br>' + \
-                        'Population: %{customdata[2]:,.0f}<br>' + \
-                        'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
-                        'IPv4 per Cap: %{customdata[4]:.2f}%' + \
-                        '<extra>Log IPv4: %{customdata[7]:.2f}</extra>'
-            return hover_template
+    # def get_hovertemplate(self, choropleth_accordion_selector):
+    #     if choropleth_accordion_selector=='grouped':
+    #         hover_template='<b>%{customdata[0]}</b><br>' + \
+    #                     'IPv4: %{customdata[1]:,.0f}<br>' + \
+    #                     'Population: %{customdata[2]:,.0f}<br>' + \
+    #                     'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
+    #                     'IPv4 per Cap: %{customdata[4]:.2f}%' + \
+    #                     '<extra>IPv4 Grouping: %{customdata[6]}</extra>'
+    #         return hover_template
+    #     elif choropleth_accordion_selector=='log':
+    #         hover_template='<b>%{customdata[0]}</b><br>' + \
+    #                     'IPv4: %{customdata[1]:,.0f}<br>' + \
+    #                     'Population: %{customdata[2]:,.0f}<br>' + \
+    #                     'Pct of Pool: %{customdata[3]:.2f}%<br>' + \
+    #                     'IPv4 per Cap: %{customdata[4]:.2f}%' + \
+    #                     '<extra>Log IPv4: %{customdata[7]:.2f}</extra>'
+    #         return hover_template
 
     # Color scale in function for easier code reusability -- Might add some more conditionals later when scaling for other graphs
     def get_colorscale(self, choropleth_accordion_selector):
@@ -44,14 +44,14 @@ class ChoroplethHandler:
         active_dataset = None
         map_fig = None
 
-        customdata = np.stack((
-            self.data_handler.json_df['name'],          # Country name
-            self.data_handler.json_df['ipv4'],          # IPv4 address count
-            self.data_handler.json_df['pop'],           # Population size
-            self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
-            self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
-            #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
-        ), axis=-1)
+        # customdata = np.stack((
+        #     self.data_handler.json_df['name'],          # Country name
+        #     self.data_handler.json_df['ipv4'],          # IPv4 address count
+        #     self.data_handler.json_df['pop'],           # Population size
+        #     self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
+        #     self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
+        #     #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
+        # ), axis=-1)
 
         if active_item=='normal':
             colors=self.get_colorscale(active_item)
@@ -64,7 +64,6 @@ class ChoroplethHandler:
                 hover_name='name',
                 color_discrete_map=colors,
                 locationmode='ISO-3',
-
                 hover_data={
                     'name': True,
                     'ipv4': ':,.0f',
@@ -131,7 +130,5 @@ class ChoroplethHandler:
                 template=template
             )
             map_fig.update_traces(hovertemplate=hover_template)
-
             map_fig.update_geos(showframe=False, projection_type='equirectangular', lonaxis_range=[-180, 180], lataxis_range=[-60, 90])
-            map_fig.update_layout()
             return map_fig  
