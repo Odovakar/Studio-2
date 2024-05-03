@@ -1,4 +1,5 @@
 import plotly.express as px
+import numpy as np
 
 class PieChartHandler:
     def __init__(self, data_handler, hover_template_handler):
@@ -40,6 +41,8 @@ class PieChartHandler:
         else:
             return None
 
+    def get_hover_label():
+        hovertemplate = "<b>%{label}</b><br>Population: %{customdata[1]:,}<br>IPv4: %{customdata[2]:,}"
 
     def generate_figure(self, active_item, active_dataset, switch_on, show_legend=True):#, show_legendshow_legend=True, , opacity=1.0
         df = None
@@ -75,7 +78,15 @@ class PieChartHandler:
                 'bordercolor':'rgba(255, 255, 255, 0)'
             }
         }
-        # IPV4 POOL DATA
+        customdata = np.stack((
+            self.data_handler.json_df['name'],          # Country name
+            self.data_handler.json_df['ipv4'],          # IPv4 address count
+            self.data_handler.json_df['pop'],           # Population size
+            self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
+            self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
+            #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
+        ), axis=-1)
+
 
         if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'TotalPool':
@@ -85,7 +96,6 @@ class PieChartHandler:
                 df = self.data_handler.json_df
                 values = 'percentv4'
                 names = 'name'
-
             elif active_item == 'RIR':
                 df = self.calculate_rir_percentages()
                 values = 'percentv4'
@@ -118,6 +128,34 @@ class PieChartHandler:
                 names = 'name'
             elif active_item == 'SUNBURST':
                 df = self.data_handler.json_df
+                print(df.dtypes)
+                #print(customdata[0])
+                '''Bug Squashing'''
+                # Check for any unique non-numeric values that might be interpreted as strings
+                print(df['pop'].apply(lambda x: type(x)).unique())
+
+                # Quick summary to find any other anomalies
+                print(df['pop'].describe())
+
+                # columns_to_check = ['pop', 'ipv4', 'percentv4', 'pcv4']
+
+                # # Step 1: Check for NaNs in each column and print the counts
+                # print("NaN counts in each column:")
+                # for column in columns_to_check:
+                #     nan_count = df[column].isna().sum()
+                #     print(f"{column}: {nan_count}")
+
+                # # Step 2: Print rows where any of the specified columns have NaN values
+                # print("\nSample rows with NaN values:")
+                # nan_rows = df[df[columns_to_check].isna().any(axis=1)]
+                # print(nan_rows.head())
+                # df['ipv4'] = df['ipv4'].astype(int)
+                # df['pop'] = df['pop'].astype(int)
+                # df['percentv4'] = df['percentv4'].astype(float)
+                # df['pcv4'] = df['pcv4'].astype(float)
+
+
+                df['percentv4'] = df['percentv4'] / 100
                 #values = 'percentv4'
                 #names = 'name'
                 sun_fig = px.sunburst(
@@ -127,7 +165,12 @@ class PieChartHandler:
                     color='RIR',
                     #hover_data=['name', 'pop', 'percentv4'],
                     color_continuous_scale='Viridis',
-                    template=template
+                    template=template,
+                    hover_data={
+                        'pop':True,
+                        'ipv4':True,
+                        'percentv4':True
+                    }
                 )
                 layout_options = {
                     #'template': template,
@@ -144,6 +187,22 @@ class PieChartHandler:
                         'bordercolor':'rgba(255, 255, 255, 0)'
                     }
                 }
+                sun_fig.update_traces(
+                    hovertemplate=(
+                        "<b>%{label}</b><br>" +
+                        "Population: %{customdata[0]:,}<br>" +  # Adds commas as thousands separators
+                        "IPv4 Address Count: %{customdata[1]:,}<br>" +  # Adds commas here too, if needed
+                        "Percent of IPv4 Pool: %{customdata[2]:.2%}<br>"  # Correctly formats percentage
+                    )
+                )
+                    
+                # trace_options = {
+                #     'hovertemplate':"<b>%{label}</b><br>Population: %{customdata[1]:,}<br>IPv4: %{customdata[2]:,}<br>Percent IPv4: %{customdata[3]:.2%}<extra></extra>",
+                #     'hoverinfo': 'label+percent+name',
+                #     'customdata':df[['name', 'pop', 'ipv4', 'percentv4']]
+                # }
+                #print("Custom Data: ", sun_fig.data[0].customdata)
+                #print("Current Hover Template: ", sun_fig.data[0].hovertemplate)
                 return sun_fig
             else:
                 df = self.get_data_by_rir(active_item)

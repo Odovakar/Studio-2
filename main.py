@@ -148,8 +148,6 @@ def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, 
     #print(active_dataset.get('data'))
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
-    #theme = theme_data['theme']
-    #print(active_item, 'active_item in choropleth callback function')
     return choropleth_map_handler.generate_figure(active_item, active_dataset, switch_on)
 
 '''----------Scatter Plot----------'''
@@ -182,8 +180,7 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
 
 '''----------Pie Chart----------'''
 @app.callback(
-    [Output('the-pie-chart', 'figure'),
-     Output('active-accordion-item-store', 'data')],
+    Output('the-pie-chart', 'figure'),
     [Input('pie-selector-accordion', 'active_item'),
      Input('ipv4-dataset', 'data'),
      Input('whois-ipv4-dataset', 'data'),
@@ -210,7 +207,7 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active
 
     #print("Updating Store with:", {'active_item': active_item})
     figure = pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend) #, show_legendshow_legend, , opacity, show_legend
-    return figure, {'active_item': active_item}
+    return figure#, {'active_item': active_item}
 
 @app.callback(
     Output('toggle-legend-store', 'data'),
@@ -222,6 +219,23 @@ def toggle_legend_visibility(n_clicks, current_legend_state):
         raise dash.exceptions.PreventUpdate
     return not current_legend_state  # Toggle between True and False
 
+@app.callback(
+    Output('active-accordion-item-store', 'data'),
+    [Input('pie-selector-accordion', 'active_item'),
+     Input('graph-tabs', 'value')],
+)
+def update_active_item_store(pie_active_item, active_tab):
+    # Debug print to check current input and state values
+    print(f"Tab: {active_tab}, Pie: {pie_active_item}")
+    
+    # Decide which accordion item to store based on the active tab
+    if active_tab == 'pie-tab' and pie_active_item is not None:
+            print(f"Updating store from Pie: {pie_active_item}")
+            return {'active_item': pie_active_item}
+
+    # If no conditions are met, do not update the store
+    return dash.no_update
+
 '''----------Bar Chart----------'''
 @app.callback(
     Output('the-bar-chart', 'figure'),
@@ -230,11 +244,12 @@ def toggle_legend_visibility(n_clicks, current_legend_state):
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
      Input('graph-tabs', 'value'),
-     Input('toggle-xaxis-scale-button', 'n_clicks'),
-     Input('switch', 'value')],
+     Input('switch', 'value'),
+     Input('toggle-axis-store', 'data')],
     prevent_initial_call=True,
 )
-def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, n_clicks, switch_on):
+def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, switch_on, toggle_axis):
+    print(f"Updating Bar Chart: {toggle_axis}")  # Debug print
     if active_tab != 'bar-tab':
         raise dash.exceptions.PreventUpdate
 
@@ -250,10 +265,38 @@ def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_
         raise dash.exceptions.PreventUpdate
 
     # Toggle the x-axis type based on the number of clicks on the toggle button
-    toggle_xaxis_type = 'log' if n_clicks and n_clicks % 2 == 1 else 'linear'
+    #toggle_xaxis_type = 'log' if n_clicks and n_clicks % 2 == 1 else 'linear'
 
-    # Assuming bar_chart_handler can accept a dataset directly
-    return bar_chart_handler.generate_figure(active_item, active_dataset, toggle_xaxis_type, switch_on)
+    figure = bar_chart_handler.generate_figure(active_item, active_dataset, switch_on, toggle_axis)
+    return figure#, {'active-item': active_item}
+
+@app.callback(
+    Output('bar-accordion-store', 'data'),
+    [Input('bar-selector-accordion', 'active_item'),
+     Input('graph-tabs', 'value')],
+)
+def update_active_item_store(bar_active_item, active_tab):
+    # Debug print to check current input and state values
+    print(f"Tab: {active_tab}, Pie: {bar_active_item}")
+    
+    # Decide which accordion item to store based on the active tab
+    if active_tab == 'pie-tab' and bar_active_item is not None:
+            print(f"Updating store from Pie: {bar_active_item}")
+            return {'active_item': bar_active_item}
+
+    # If no conditions are met, do not update the store
+    return dash.no_update
+
+@app.callback(
+    Output('toggle-axis-store', 'data'),
+    [Input('toggle-axis-button', 'n_clicks')],
+    [State('toggle-axis-store', 'data')]
+)
+def toggle_axis(n_clicks, current_state):
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
+    # Toggle between 'linear' and 'log'
+    return 'log' if current_state == 'linear' else 'linear'
 
 '''----------Custom Graph Stuff----------'''
 @app.callback(
@@ -337,8 +380,7 @@ def goto_page(n):
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv4-time-series-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
-     Input('graph-tabs', 'value'),
-     ],#Input('active-accordion-item-store', 'data')
+     Input('graph-tabs', 'value')],
     prevent_initial_call=True,
 )
 def update_dynamic_card_content(ipv4_data, whois_ipv4_data, ipv4_time_series_data, ipv6_data, active_tab):#, store_data
@@ -417,7 +459,9 @@ app.layout = dbc.Container([
     dcc.Store(id='ipv6-dataset', storage_type='memory'),
     dcc.Store(id='intermediate-data-from-grid', storage_type='memory'),
     dcc.Store(id='active-accordion-item-store', data={'active_item': 'log'}),
+    dcc.Store(id='bar-accordion-store'),
     dcc.Store(id='toggle-legend-store', data=False),
+    dcc.Store(id='toggle-axis-store', data='linear'),
 
     # Header section
     dbc.Row([

@@ -38,15 +38,18 @@ class DynamicCardHandler:
         ])
 
     def get_control_buttons(self, active_item, active_tab):
-        print(f"Generating controls for {active_item} on {active_tab}")
+        #print(f"Generating controls for {active_item} on {active_tab}")
         if active_tab == 'pie-tab':
             if active_item == 'SUNBURST':
-                return html.Div("Sunburst specific controls")
+                return html.Div()
             elif active_item in ['TotalPool', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'RIR']:
                 return dbc.Button('Toggle Legend', id='toggle-legend-button')
             else:
-                return html.Div("No specific controls available for this item.")
-        return html.Div("This tab has no controls.")
+                return html.Div()
+        elif active_tab == 'bar-tab':
+            if active_item in ['RIR', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC']:
+                return dbc.Button('Toggle Axis', id='toggle-axis-button')
+        return html.Div()
 
     def get_accordion(self, title, id, accordion_options, **kwargs):
         return html.Div([
@@ -67,13 +70,6 @@ class DynamicCardHandler:
                 n_clicks=0
             ),
         ])
-    
-    def get_buttons(self, active_item, active_tab):
-        active_item = active_item.get('active_item')
-        #print(active_item, active_tab)
-        if active_tab == 'pie-tab':
-            if active_item == 'SUNBURST':
-                return print('this works')
 
     def get_content(self, active_dataset, active_tab):
         if not active_dataset or 'data' not in active_dataset:
@@ -252,8 +248,7 @@ class DynamicCardHandler:
                 ]
 
                 card_controls = self.get_accordion(title, id, accordion_options)
-                toggle_button = self.get_scale_toggle_button()
-                return card_controls, toggle_button
+                return card_controls
         elif active_tab == 'custom-tab':
             #print('we are in the dyn card elif active tab conditional') both of these are good
             if dataset == 'ipv4' or 'whoisv4':

@@ -43,7 +43,7 @@ class BarChartHandler:
 
 
 
-    def generate_figure(self, active_item, active_dataset, toggle_xaxis_type, switch_on):
+    def generate_figure(self, active_item, active_dataset, switch_on, toggle_axis):
         data_frame = None
         x = None
         y = None
@@ -84,7 +84,7 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_xaxis_type,
+                    'yaxis_type':toggle_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
@@ -96,7 +96,7 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-40,
-                    'yaxis_type':toggle_xaxis_type,
+                    'yaxis_type':toggle_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
@@ -109,7 +109,7 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_xaxis_type,
+                    'yaxis_type':toggle_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
@@ -122,7 +122,7 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_xaxis_type,
+                    'yaxis_type':toggle_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
@@ -135,7 +135,7 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_xaxis_type,
+                    'yaxis_type':toggle_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
@@ -148,7 +148,7 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_xaxis_type,
+                    'yaxis_type':toggle_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }

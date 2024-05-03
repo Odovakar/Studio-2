@@ -36,7 +36,7 @@ class CustomChartHandler:
                 return fig
             else:
                 df = self.data_handler.json_df
-                print(df.columns.tolist())
+                #print(df.columns.tolist())
                 fig = px.histogram(
                     df,
                     x='RIR',
