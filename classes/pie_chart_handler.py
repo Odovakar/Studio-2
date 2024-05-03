@@ -65,7 +65,7 @@ class PieChartHandler:
             self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
             #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
         ), axis=-1)
-
+        
         print("Log scale active:", log_scale_active)
         trace_options = {
             'textposition': 'inside',

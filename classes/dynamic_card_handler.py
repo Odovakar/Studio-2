@@ -38,17 +38,17 @@ class DynamicCardHandler:
     #     ])
 
     def get_control_buttons(self, active_item, active_tab):
-        #print(f"Generating controls for {active_item} on {active_tab}")
+        #print(f'Generating controls for {active_item} on {active_tab}')
         if active_tab == 'pie-tab':
             if active_item == 'SUNBURST':
                 return html.Div()
             elif active_item == 'TotalPool':
                 button_group = dbc.ButtonGroup([
-                                    dbc.Button("Top 10", id="top10-button", className="btn-primary"),
-                                    dbc.Button("Legend", id="toggle-legend-button", className="btn-light"),
-                                    dbc.Button("Log", id="toggle-log-button", className="btn-secondary"),
-                                    dbc.Button("Bottom 10", id="bottom10-button", className="btn-primary")
-                                ], className="mb-2")
+                                    dbc.Button('Top 10', id='top10-button', key='top10-button', outline=True, className='btn-outline-primary', n_clicks=0),
+                                    dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary'),
+                                    dbc.Button('Log', id='toggle-log-button', outline=True, className='btn-outline-primary'),
+                                    dbc.Button('Bottom 10', id='bottom10-button', outline=True, className='btn-outline-primary')
+                                ], className='mb-2')
                 return button_group
             elif active_item in ['ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'RIR']:
                 return dbc.Button('Toggle Legend', id='toggle-legend-button')
@@ -72,7 +72,7 @@ class DynamicCardHandler:
     def get_scale_toggle_button(self):
         return html.Div([
             dbc.Button(
-                "Toggle X-Axis Scale", 
+                'Toggle X-Axis Scale', 
                 id='toggle-xaxis-scale-button', 
                 className='mb-2',
                 n_clicks=0
@@ -81,7 +81,7 @@ class DynamicCardHandler:
 
     def get_content(self, active_dataset, active_tab):
         if not active_dataset or 'data' not in active_dataset:
-            return "Please select a dataset and ensure data is loaded."
+            return 'Please select a dataset and ensure data is loaded.'
 
 
         dataset = active_dataset.get('dataset')

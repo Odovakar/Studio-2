@@ -50,7 +50,7 @@ class DataHandler:
             expected_columns = ['ISO-3', 'Year', 'Registry', 'Type', 'Start', 'Value', 'Date', 'Status', 'Prefix', 'Country', 'Population']
             if not all(col in self.whois_ipv4_df.columns for col in expected_columns):
                 raise ValueError("WHOIS IPv4 data missing expected columns.")
-            print("WHOIS IPv4 data loaded successfully.")
+            #print("WHOIS IPv4 data loaded successfully.")
         except Exception as e:
             print(f"Failed to load WHOIS IPv4 data: {e}")
 
@@ -60,7 +60,7 @@ class DataHandler:
             self.whois_ipv4_df['Date'] = pd.to_datetime(self.whois_ipv4_df['Date'])
             self.whois_ipv4_df['Year'] = self.whois_ipv4_df['Year'].astype(int)
             self.whois_ipv4_df['Population'] = pd.to_numeric(self.whois_ipv4_df['Population'], errors='coerce')
-            print("WHOIS IPv4 data processed successfully.")
+            #print("WHOIS IPv4 data processed successfully.")
         except Exception as e:
             print(f"Error processing WHOIS IPv4 data: {e}")
 

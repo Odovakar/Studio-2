@@ -113,12 +113,7 @@ class ScatterHandler:
                     }
                 )
                 
-                # # Highlight significant outliers (e.g., USA) with annotations if needed
-                # if 'USA' in self.data_handler.json_df['iso_alpha_3'].values:
-                #     usa_ipv4 = self.data_handler.json_df.loc[self.data_handler.json_df['iso_alpha_3'] == 'USA', 'ipv4'].iloc[0]
-                #     usa_pop = self.data_handler.json_df.loc[self.data_handler.json_df['iso_alpha_3'] == 'USA', 'pop'].iloc[0]
-                #     scatter_fig.add_annotation(x=usa_pop, y=usa_ipv4, text='USA', showarrow=True, arrowhead=1)
-
+                # Tweaks to the plots
                 max_ipv4 = self.data_handler.json_df['ipv4'].max()
                 desired_max_marker_size = 27
                 sizeref = 2. * max_ipv4 / (desired_max_marker_size ** 3.5)
@@ -137,6 +132,10 @@ class ScatterHandler:
                     unselected=unselected,
                     hovertemplate=hover_template
                     )
+                
+                scatter_fig.update_xaxes(title_text='Population Size (Logarithmic Scale)')
+                scatter_fig.update_yaxes(title_text='IPv4 Percentage of Pool per Capita (Logarithmic Scale)')
+                
                 scatter_fig.update_layout(
                     coloraxis_colorbar=dict(
                     title='Log IPv4',
