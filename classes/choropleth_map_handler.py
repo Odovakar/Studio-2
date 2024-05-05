@@ -42,7 +42,7 @@ class ChoroplethHandler:
         hover_template = self.hover_template_handler.get_hover_template(active_item)
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
         active_dataset = None
-        map_fig = None
+        # map_fig = None
 
         # customdata = np.stack((
         #     self.data_handler.json_df['name'],          # Country name

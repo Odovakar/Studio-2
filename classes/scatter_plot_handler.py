@@ -131,7 +131,7 @@ class ScatterHandler:
                     selected=selected,
                     unselected=unselected,
                     hovertemplate=hover_template
-                    )
+                )
                 
                 scatter_fig.update_xaxes(title_text='Population Size (Logarithmic Scale)')
                 scatter_fig.update_yaxes(title_text='IPv4 Percentage of Pool per Capita (Logarithmic Scale)')
@@ -151,6 +151,5 @@ class ScatterHandler:
                     margin={'r':5, 't':50, 'l':5, 'b':20},
                     clickmode='event+select'
                 )
-
 
             return scatter_fig

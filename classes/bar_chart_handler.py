@@ -1,6 +1,6 @@
 import plotly.express as px
 import pandas as pd
-from dash import html
+import numpy as np
 
 class BarChartHandler:
     def __init__(self,  data_handler):
@@ -41,9 +41,20 @@ class BarChartHandler:
         else:
             return None
 
+    def case_df_processing(self, df, log_scale_active, view_mode):
+        value_column = 'log_percentv4' if log_scale_active else 'percentv4'
 
+        log_values = np.log10(df['percentv4'] + 0.0001)
+        df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
 
-    def generate_figure(self, active_item, active_dataset, switch_on, toggle_axis):
+        if view_mode == 'top10':
+            df = df.nlargest(10, 'percentv4').copy()
+        elif view_mode == 'bottom10':
+            df = df.nsmallest(10, 'percentv4').copy()
+
+        return df, value_column
+
+    def generate_figure(self, active_item, active_dataset, switch_on, log_scale_active=False, view_mode='all'):
         data_frame = None
         x = None
         y = None
@@ -52,6 +63,9 @@ class BarChartHandler:
         hover_data = None
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
 
+        print('in bar chart generate figure', log_scale_active)
+        print('in bar chart generate figure', view_mode)
+        print("Log scale active:", log_scale_active)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item)
        # customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
@@ -84,71 +98,31 @@ class BarChartHandler:
 
                 layout_options = {
                     'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_axis,
+                    'yaxis_type':'linear',
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
-            elif active_item == 'RIPENCC':
+            elif active_item in ['RIPENCC', 'ARIN', 'AFRINIC', 'LACNIC', 'APNIC']:
                 modified_df=self.calculate_rir_country_data(self.data_handler.json_df, active_item)    
-                data_frame=modified_df
-                x=modified_df['name']
-                y=modified_df['percentv4']
+                df=modified_df
+
+                x_axis = 'log' if log_scale_active else 'linear'
+
+                log_values = np.log10(df['percentv4'] + 0.0001)
+                df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
+
+                if view_mode == 'top10':
+                    df = df.nlargest(10, 'percentv4').copy()
+                elif view_mode == 'bottom10':
+                    df = df.nsmallest(10, 'percentv4').copy()
+
+
+                x=df['name']
+                y=df['percentv4']
 
                 layout_options = {
                     'xaxis_tickangle':-40,
-                    'yaxis_type':toggle_axis,
-                    'autosize':True,
-                    'margin': dict(t=50, b=50, l=50, r=50),
-                }
-
-            elif active_item == 'ARIN':
-                modified_df=self.calculate_rir_country_data(self.data_handler.json_df, active_item)    
-                data_frame=modified_df
-                x=modified_df['name']
-                y=modified_df['percentv4']
-
-                layout_options = {
-                    'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_axis,
-                    'autosize':True,
-                    'margin': dict(t=50, b=50, l=50, r=50),
-                }
-            
-            elif active_item == 'APNIC':
-                modified_df=self.calculate_rir_country_data(self.data_handler.json_df, active_item)    
-                data_frame=modified_df
-                x=modified_df['name']
-                y=modified_df['percentv4']
-
-                layout_options = {
-                    'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_axis,
-                    'autosize':True,
-                    'margin': dict(t=50, b=50, l=50, r=50),
-                }
-
-            elif active_item == 'LACNIC':
-                modified_df=self.calculate_rir_country_data(self.data_handler.json_df, active_item)    
-                data_frame=modified_df
-                x=modified_df['name']
-                y=modified_df['percentv4']
-
-                layout_options = {
-                    'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_axis,
-                    'autosize':True,
-                    'margin': dict(t=50, b=50, l=50, r=50),
-                }
-            
-            elif active_item == 'AFRINIC':
-                modified_df=self.calculate_rir_country_data(self.data_handler.json_df, active_item)    
-                data_frame=modified_df
-                x=modified_df['name']
-                y=modified_df['percentv4']
-
-                layout_options = {
-                    'xaxis_tickangle':-25,
-                    'yaxis_type':toggle_axis,
+                    'yaxis_type':x_axis,
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }

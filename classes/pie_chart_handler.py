@@ -1,5 +1,6 @@
 import plotly.express as px
 import numpy as np
+import plotly.graph_objs as go
 
 class PieChartHandler:
     def __init__(self, data_handler, hover_template_handler):
@@ -13,14 +14,6 @@ class PieChartHandler:
     def get_data_by_rir(self, rir):
         df = self.data_handler.json_df
         return df[df['RIR'] == rir]
-
-    def populate_custom_data(self, active_item, active_dataset):
-        customdata = None
-        if active_item=='TotalPool':
-            if active_dataset=='ipv4':
-                df = self.data_handler.json_df
-                customdata=df[['name', 'ipv4', 'pop', 'percentv4', 'pcv4', 'iso_alpha_3', 'ipv4_grouping', 'log_ipv4']].to_dict('records')
-                return customdata
 
     def calculate_rir_country_data(self, df, active_item):
         if active_item == 'ARIN':
@@ -41,6 +34,19 @@ class PieChartHandler:
         else:
             return None
 
+    def case_df_processing(self, df, log_scale_active, view_mode):
+        value_column = 'log_percentv4' if log_scale_active else 'percentv4'
+
+        log_values = np.log10(df['percentv4'] + 0.0001)
+        df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
+
+        if view_mode == 'top10':
+            df = df.nlargest(10, 'percentv4').copy()
+        elif view_mode == 'bottom10':
+            df = df.nsmallest(10, 'percentv4').copy()
+
+        return df, value_column
+
     def get_hover_label():
         hovertemplate = "<b>%{label}</b><br>Population: %{customdata[1]:,}<br>IPv4: %{customdata[2]:,}"
 
@@ -48,119 +54,144 @@ class PieChartHandler:
         df = None
         values = None
         names = None
-        customdata = None
-        hover_template = None
+        #customdata = None
         hover_data = None
+        hovertemplate = None
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
         opacity = 0.5 if show_legend else 1.0
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item)
         #customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
         # print(active_item, active_dataset.get('dataset'))
-        customdata = np.stack((
-            self.data_handler.json_df['name'],          # Country name
-            self.data_handler.json_df['ipv4'],          # IPv4 address count
-            self.data_handler.json_df['pop'],           # Population size
-            self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
-            self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
-            #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
-        ), axis=-1)
-        
-        print("Log scale active:", log_scale_active)
+
         trace_options = {
             'textposition': 'inside',
             'opacity': opacity,
-            #'hovertemplate': hover_template
+            #'hovertemplate': hovertemplate
         }
-        #layout_options = {'showlegend': True, 'margin': dict(t=50, b=50, l=50, r=50), 'uniformtext_mode': 'hide', 'uniformtext_minsize': 12, 'height': 400, 'width': 400}
+
         layout_options = {
             'template': template,
             'showlegend': show_legend,
             'margin': dict(t=50, b=50, l=50, r=50),
             'uniformtext_mode': 'hide',
-            'uniformtext_minsize': 12,
+            'uniformtext_minsize': 10,
             'legend': {
                 'orientation': 'h',
                 'x': 0,
                 'y': 1.1, 
-                'bgcolor':
-                'rgba(255, 255, 255, 0)',
+                'bgcolor': 'rgba(255, 255, 255, 0)',
                 'bordercolor':'rgba(255, 255, 255, 0)'
             }
         }
 
-        value_column = 'log_percentv4' if log_scale_active else 'percentv4'
+        
+        print("Log scale active:", log_scale_active)
+        # customdata = np.stack((
+        #     self.data_handler.json_df['name'],          # Country name
+        #     self.data_handler.json_df['ipv4'],          # IPv4 address count
+        #     self.data_handler.json_df['pop'],           # Population size
+        #     self.data_handler.json_df['percentv4'],     # Percent of IPv4 pool
+        #     self.data_handler.json_df['pcv4'],          # IPv4 per capita percentage
+        #     #json_df['log_ipv4']       # Log of IPv4 for the logarithmic map
+        # ), axis=-1)
+
+        #value_column = 'log_percentv4' if log_scale_active else 'percentv4'
         #print("Using column for values:", value_column)
         if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'TotalPool':
-                
                 df = self.data_handler.json_df
-                log_values = np.log10(df['percentv4'] + 0.0001)
-                df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
-                #print("View Mode before conditional:", view_mode)
-                #print('it works')
-                if view_mode == 'top10':
-                    df = df.nlargest(10, 'percentv4')
-                elif view_mode == 'bottom10':
-                    df = df.nsmallest(10, 'percentv4')
-                    #print(df.tail(10))
-                #print("View Mode afcter:", view_mode)
-                #print("Data preview:", df.head())
+                df, value_column = self.case_df_processing(df, log_scale_active, view_mode)
                 hover_data={
                     'name': True,
                     'ipv4': ':,.0f',
                     'pop': ':,.0f',
                     'percentv4': ':.2f',
-                    #'pcv4': ':.2f',
-                    #'iso_alpha_3': False,
-                    #'ipv4_grouping': True,
-                    #'log_ipv4': False
                 }
-                #customdata = self.populate_custom_data(active_item, active_dataset)
-                #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
-                
+
                 values = value_column
                 names = 'name'
+
             elif active_item == 'RIR':
                 df = self.calculate_rir_percentages()
                 values = 'percentv4'
                 names = 'RIR'
 
-            elif active_item == 'RIPENCC':
-                ripencc_data = self.calculate_rir_country_data(self.data_handler.json_df, 'RIPENCC')
-                df = ripencc_data
-                values = 'percentv4'
-                names = 'name'
+            elif active_item in ['RIPENCC', 'ARIN', 'AFRINIC', 'APNIC', 'LACNIC']:
+                RIR_DATA = self.calculate_rir_country_data(self.data_handler.json_df, active_item)
+                df = RIR_DATA
+                value_column = 'log_percentv4' if log_scale_active else 'percentv4'
 
-            elif active_item == 'ARIN':
-                df = self.calculate_rir_country_data(self.data_handler.json_df, 'ARIN')
-                values = 'percentv4'
-                names = 'name'
-            
-            elif active_item == 'APNIC':
-                df = self.calculate_rir_country_data(self.data_handler.json_df, 'APNIC')
-                values = 'percentv4'
-                names = 'name'
-            
-            elif active_item == 'LACNIC':
-                df = self.calculate_rir_country_data(self.data_handler.json_df, 'LACNIC')
-                values = 'percentv4'
-                names = 'name'
+                log_values = np.log10(df['percentv4'] + 0.0001)
+                df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
 
-            elif active_item == 'AFRINIC':
-                df = self.calculate_rir_country_data(self.data_handler.json_df, 'AFRINIC')
-                values = 'percentv4'
+                if view_mode == 'top10':
+                    df = df.nlargest(10, 'percentv4').copy()
+                elif view_mode == 'bottom10':
+                    df = df.nsmallest(10, 'percentv4').copy()
+
+                
+                # trace_options={
+                #     'textinfo': 'percent+label',
+                #     'hoverinfo':'label+percent+name',
+                #     #'marker': dict(line=dict(color='white', width=2)),
+                    
+                # }
+                
+                # hovertemplate = (
+                #     "<b>%{label}</b><br>" +
+                #     "Population: %{customdata[1]:,}<br>" +
+                #     "IPv4 Address Count: %{customdata[0]:,}<br>" +
+                #     "Percent of IPv4 Pool: %{customdata[2]:.2%}<br>"
+                # )
+                #pull = pull = [0.2 if percent < 1 else 0 for percent in df['percentv4']]
+                values = value_column
                 names = 'name'
+                # hover_data = {
+                #     'name': True,
+                #     'ipv4': ':,.0f',
+                #     'pop': ':,.0f',
+                #     'percentv4': ':.2f'
+                # }
+
+            # elif active_item == 'ARIN':
+            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'ARIN')
+            #     print(df.columns.tolist())
+            #     log_values = np.log10(df['percentv4'] + 0.0001)
+            #     df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
+            #     if view_mode == 'top10':
+            #         df = df.nlargest(10, 'percentv4')
+            #     elif view_mode == 'bottom10':
+            #         df = df.nsmallest(10, 'percentv4')
+
+            #     values = value_column
+            #     values = 'percentv4'
+            #     names = 'name'
+            
+            # elif active_item == 'APNIC':
+            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'APNIC')
+            #     values = 'percentv4'
+            #     names = 'name'
+            
+            # elif active_item == 'LACNIC':
+            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'LACNIC')
+            #     values = 'percentv4'
+            #     names = 'name'
+
+            # elif active_item == 'AFRINIC':
+            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'AFRINIC')
+            #     values = 'percentv4'
+            #     names = 'name'
             elif active_item == 'SUNBURST':
                 df = self.data_handler.json_df
-                print(df.dtypes)
+                #print(df.dtypes)
                 #print(customdata[0])
                 '''Bug Squashing'''
                 # Check for any unique non-numeric values that might be interpreted as strings
-                print(df['pop'].apply(lambda x: type(x)).unique())
+                #print(df['pop'].apply(lambda x: type(x)).unique())
 
                 # Quick summary to find any other anomalies
-                print(df['pop'].describe())
+                #print(df['pop'].describe())
 
                 # columns_to_check = ['pop', 'ipv4', 'percentv4', 'pcv4']
 
@@ -179,7 +210,8 @@ class PieChartHandler:
                 # df['percentv4'] = df['percentv4'].astype(float)
                 # df['pcv4'] = df['pcv4'].astype(float)
 
-
+                df['pop'].fillna(0, inplace=True)
+                df['percentv4'].fillna(0, inplace=True)  
                 df['percentv4'] = df['percentv4'] / 100
                 #values = 'percentv4'
                 #names = 'name'
@@ -188,14 +220,14 @@ class PieChartHandler:
                     path=['RIR', 'name'],
                     values='ipv4', 
                     color='RIR',
-                    #hover_data=['name', 'pop', 'percentv4'],
                     color_continuous_scale='Viridis',
                     template=template,
                     hover_data={
                         'pop':True,
                         'ipv4':True,
                         'percentv4':True
-                    }
+                    },
+                    branchvalues='total',
                 )
                 layout_options = {
                     #'template': template,
@@ -234,26 +266,15 @@ class PieChartHandler:
                 values = 'percentv4'
                 names = 'name'
 
+        pie_fig = go.Figure(
+            data=[go.Pie(
+                labels=df[names],
+                values=df[values],
+                textposition='inside'
 
-        if active_dataset == 'whoisv4':
-            customdata = self.populate_custom_data(active_item, active_dataset)
-            hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
-            df = self.data_handler.whois_ipv4_df
-            values = 'Value'
-            names = 'Registry'
+            )]
+        )
 
-        elif active_dataset=='whoisv4':
-            df = self.data_handler.whois_ipv4_df
-            values = 'Start' 
-            names = 'Registry'
-
-        pie_fig = px.pie(
-            df,
-            values=values,
-            names=names,
-            color_discrete_sequence=px.colors.qualitative.Pastel,
-            hover_data=hover_data,
-        ) #, custom_data=customdata, hover_data=hover_data
-        pie_fig.update_traces(**trace_options)
+        #pie_fig.update_traces(**trace_options)
         pie_fig.update_layout(**layout_options)
         return pie_fig

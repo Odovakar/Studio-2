@@ -122,6 +122,8 @@ def update_ipv6_dataset(n_whoisv6, ipv6_data):
     return ipv6_data
 
 '''----------Choropleth Map Stuff----------'''
+# Main bossmeng logic for the choropleth map, this will take in data from all related stores and callbacks and
+# return the correct graph logic based on the arguments the class has been served
 @app.callback(
         Output('the-choropleth-map', 'figure'),
         [Input('ipv4-dataset', 'data'),
@@ -151,6 +153,8 @@ def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, 
     return choropleth_map_handler.generate_figure(active_item, active_dataset, switch_on)
 
 '''----------Scatter Plot----------'''
+# Main bossmeng logic for the scatter plot, this will take in data from all related stores and callbacks and
+# return the correct graph logic based on the arguments the class has been served
 @app.callback(
     Output('the-scatter-plot', 'figure'),
     [Input('ipv4-dataset', 'data'),
@@ -179,6 +183,8 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
     return scatter_plot_handler.generate_figure(scatter_selector_accordion, active_dataset, switch_on)
 
 '''----------Pie Chart----------'''
+# Main bossmeng logic for the pie chart, this will take in data from all related stores and callbacks and
+# return the correct graph logic based on the arguments the class has been served
 @app.callback(
     Output('the-pie-chart', 'figure'),
     [Input('pie-selector-accordion', 'active_item'),
@@ -196,7 +202,6 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active
     if active_tab != 'pie-tab':
         raise dash.exceptions.PreventUpdate
     #print('initial view mode data in the update_pie_figure in main', view_mode_data)
-    # Determine which dataset is currently active based on UI controls or other logic
     active_dataset = None
     if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC' or 'SUNBURST':
         active_dataset = ipv4_data
@@ -215,7 +220,7 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active
         view_mode_data = {'view_mode': 'all'}
 
     log_scale_active = log_scale_data['log_scale_active'] if log_scale_data else False
-    #print('Log scale active state received in pie chart callback:', log_scale_active)
+    print('Log scale active state received in update pie chart callback:', log_scale_active)
 
     #print('Updating Store with:', {'active_item': active_item})
     view_mode = view_mode_data['view_mode']
@@ -223,26 +228,25 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active
     return figure#, {'active_item': active_item}
 
 
-
 @app.callback(
-    Output('active-accordion-item-store', 'data'),
+    Output('pie-accordion-store', 'data'),
     [Input('pie-selector-accordion', 'active_item'),
      Input('graph-tabs', 'value')],
      prevent_initial_call=True
 )
-def update_active_item_store(pie_active_item, active_tab):
-    # Debug print to check current input and state values
-    #print(f'Tab: {active_tab}, Pie: {pie_active_item}')
-    
-    # Decide which accordion item to store based on the active tab
+def update_pie_active_item_store(pie_active_item, active_tab):
+    # This is an atomic function doing exactly what it says. The reasoning for the repetetiveness is because
+    # having two inputs writing to the same store and serving different outputs is not DASH/Plotly's strong suit
+    # the faster option was to write two similar functions instead of importing outside state libraries for handling this issue.
     if active_tab == 'pie-tab' and pie_active_item is not None:
             #print(f'Updating store from Pie: {pie_active_item}')
             return {'active_item': pie_active_item}
 
-    # If no conditions are met, do not update the store
     return dash.no_update
 
 '''----------Bar Chart----------'''
+# Main bossmeng logic for the bar chart, this will take in data from all related stores and callbacks and
+# return the correct graph logic based on the arguments the class has been served
 @app.callback(
     Output('the-bar-chart', 'figure'),
     [Input('bar-selector-accordion', 'active_item'),
@@ -251,58 +255,41 @@ def update_active_item_store(pie_active_item, active_tab):
      Input('ipv6-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('switch', 'value'),
-     Input('toggle-axis-store', 'data')],
+     Input('view-mode-store', 'data'),
+     Input('log-scale-store', 'data')],
     prevent_initial_call=True,
 )
-def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, switch_on, toggle_axis):
-    #print(f'Updating Bar Chart: {toggle_axis}')  # Debug print
+def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, switch_on, view_mode_data, log_scale_data):
     if active_tab != 'bar-tab':
         raise dash.exceptions.PreventUpdate
 
     active_dataset = None
     if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC':
         active_dataset = ipv4_data
-    # elif active_item == 'whois_ipv4':
-    #     active_dataset = whois_ipv4_data
     elif active_item == 'ipv6':
         active_dataset = ipv6_data
 
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
+    
+    log_scale_active = log_scale_data['log_scale_active'] if log_scale_data else False
+    print('Log scale active state received in update bar chart callback:', log_scale_active)
 
-    # Toggle the x-axis type based on the number of clicks on the toggle button
-    #toggle_xaxis_type = 'log' if n_clicks and n_clicks % 2 == 1 else 'linear'
-
-    figure = bar_chart_handler.generate_figure(active_item, active_dataset, switch_on, toggle_axis)
-    return figure#, {'active-item': active_item}
+    view_mode = view_mode_data['view_mode']
+    figure = bar_chart_handler.generate_figure(active_item, active_dataset, switch_on, log_scale_active, view_mode)
+    return figure
 
 @app.callback(
     Output('bar-accordion-store', 'data'),
     [Input('bar-selector-accordion', 'active_item'),
      Input('graph-tabs', 'value')],
 )
-def update_active_item_store(bar_active_item, active_tab):
-    # Debug print to check current input and state values
-    #print(f'Tab: {active_tab}, Pie: {bar_active_item}')
-    
-    # Decide which accordion item to store based on the active tab
-    if active_tab == 'pie-tab' and bar_active_item is not None:
-            #print(f'Updating store from Pie: {bar_active_item}')
+def update_bar_active_item_store(bar_active_item, active_tab):
+    if active_tab == 'bar-tab' and bar_active_item is not None:
+            #print(f'Updating store from Bar: {bar_active_item}')
             return {'active_item': bar_active_item}
 
-    # If no conditions are met, do not update the store
     return dash.no_update
-
-@app.callback(
-    Output('toggle-axis-store', 'data'),
-    [Input('toggle-axis-button', 'n_clicks')],
-    [State('toggle-axis-store', 'data')]
-)
-def toggle_axis(n_clicks, current_state):
-    if n_clicks is None:
-        raise dash.exceptions.PreventUpdate
-    # Toggle between 'linear' and 'log'
-    return 'log' if current_state == 'linear' else 'linear'
 
 '''----------Custom Graph Stuff----------'''
 @app.callback(
@@ -356,6 +343,7 @@ def update_columns(switch_value, ipv4_data, whois_ipv4_data):
 
     return row_data, column_defs
 
+# Ag-grid pagination logic
 @app.callback(
     Output('ag-pagination-component', 'max_value'),
     Input('the-ag-grid', 'paginationInfo')
@@ -376,8 +364,9 @@ def goto_page(n):
     return n - 1
 
 '''----------UI Element Logic----------'''
-# NOTE: The logic for the dynamic control card displayed on the left of the UI is handled in the
-# appropriate handler becuase of it's size
+# NOTE: This handles most of the element UI logic that can be regarded as having a general function.
+# If the UI logic is very closely linked to a specific chart or the ag-grid it will be present in the section
+# of their respective "parent"
 
 # This function will display information related to the graph that's currently on display in the graph tab.
 @app.callback(
@@ -402,24 +391,33 @@ def update_dynamic_card_content(ipv4_data, whois_ipv4_data, ipv4_time_series_dat
     
     return dynamic_card_handler.get_content(active_dataset, active_tab)
 
+# Fetches the toggle-button(s) that are/is shown below the accordion based on the case it is served
 @app.callback(
     Output('dynamic-button-div', 'children'),
-    [Input('active-accordion-item-store', 'data'),
+    [Input('pie-accordion-store', 'data'),
+     Input('bar-accordion-store', 'data'),
      Input('graph-tabs', 'value')],
 )
-def update_dynamic_toggle_button(store_data, active_tab):
+def update_dynamic_toggle_button(pie_store_data, bar_store_data, active_tab):
     #print('Store Data Received:', store_data)
     #print('Active Tab:', active_tab)
 
-    if not store_data or 'active_item' not in store_data:
-        print('Data store is empty or incorrect structure.')
+    if not pie_store_data or 'active_item' not in pie_store_data:
+        #print('Data store is empty or incorrect structure.')
         return html.Div('No item selected or incorrect data store format.')
+    if active_tab == 'pie-tab':
+        active_item = pie_store_data['active_item']
+        return dynamic_card_handler.get_control_buttons(active_item, active_tab)
+    elif active_tab == 'bar-tab':
+        #print('bar store data is', bar_store_data)
+        #print(active_tab)
+        active_item = bar_store_data['active_item']
+        #print(active_item)
+        return dynamic_card_handler.get_control_buttons(active_item, active_tab)
+    else:
+        return html.Div()
 
-    active_item = store_data['active_item']
-
-    # Call the method to generate buttons based on the current state
-    return dynamic_card_handler.get_control_buttons(active_item, active_tab)
-
+# Does what the function name says
 @app.callback(
     [Output('toggle-legend-store', 'data'),
      Output('toggle-legend-button', 'className')],
@@ -431,14 +429,12 @@ def toggle_legend_visibility(n_clicks, current_legend_state):
     if n_clicks is None:
         raise dash.exceptions.PreventUpdate
 
-    # Toggle the current state of the legend visibility
     new_legend_state = not current_legend_state if current_legend_state is not None else True
-
-    # Set the button style based on the new state of the legend visibility
-    button_style = "btn-primary" if new_legend_state else "btn-outline-primary"
+    button_style = 'btn-primary' if new_legend_state else 'btn-outline-primary'
 
     return new_legend_state, button_style
 
+# Updates the graph display if the top/bottom 10 buttons have been clicked
 @app.callback(
     [Output('view-mode-store', 'data'),
      Output('top10-button', 'className'),
@@ -478,6 +474,7 @@ def update_view_mode(top10_clicks, bottom10_clicks, current_view_mode):
         return dash.no_update
     return new_mode, top10_class, bottom10_class
 
+# Does what the function name says
 @app.callback(
     [Output('log-scale-store', 'data'),
      Output('toggle-log-button', 'className')],
@@ -497,14 +494,11 @@ def toggle_log_scale(n_clicks, log_scale_state):
 
     button_style = 'btn-primary' if new_state else 'btn-outline-primary'
 
-    #print('Log scale toggle clicked, current state:', current_state)
-    #print('New log scale state:', new_state)
-    #print('Button style set to:', button_style)
-
     # Return the new state and button style
     return {'log_scale_active': new_state}, button_style
 
-# This handles the button outline based on which button is pressed and not.
+# Changes the button styling of the IPv4/6 buttongroup on the top right of the UI
+# Function name is a a bit ambiguous because it was created early in the development.
 @app.callback(
     [Output('whoisv4', 'className'),
      Output('whoisv6', 'className'),],
@@ -525,74 +519,7 @@ def update_button_styles(n_whoisv6, n_whoisv4):
         elif button_id == 'whoisv6':
             return ['btn-outline-primary', 'btn-primary']
 
-# @app.callback(
-#     [Output('top10-button', 'className'),
-#      Output('toggle-legend-button', 'className'),
-#      Output('toggle-log-button', 'className'),
-#      Output('bottom10-button', 'className')],
-#     [Input('top10-button', 'n_clicks'),
-#      Input('toggle-legend-button', 'n_clicks'),
-#      Input('toggle-log-button', 'n_clicks'),
-#      Input('bottom10-button', 'n_clicks')],
-#     prevent_initial_call=True
-# )
-# def update_button_styles(top10_clicks, legend_clicks, log_clicks, bottom10_clicks):
-#     ctx = dash.callback_context
-    
-#     if not ctx.triggered:
-#         return ['btn-outline-primary'] * 4
-#     else:
-#         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        
-#         styles = {
-#             'top10-button': 'btn-outline-primary',
-#             'toggle-legend-button': 'btn-outline-primary',
-#             'toggle-log-button': 'btn-outline-primary',
-#             'bottom10-button': 'btn-outline-primary'
-#         }
-        
-#         # Set the clicked button to active style
-#         styles[button_id] = 'btn-primary'
-        
-#         return [styles['top10-button'], styles['toggle-legend-button'], styles['toggle-log-button'], styles['bottom10-button']]
-
-# @app.callback(
-#     [Output('top10-button', 'className'),
-#      Output('toggle-legend-button', 'className'),
-#      Output('toggle-log-button', 'className'),
-#      Output('bottom10-button', 'className')],
-#     [Input('top10-button', 'n_clicks'),
-#      Input('toggle-legend-button', 'n_clicks'),
-#      Input('toggle-log-button', 'n_clicks'),
-#      Input('bottom10-button', 'n_clicks')],
-#     [State('view-mode-store', 'data')],
-#     prevent_initial_call=True
-# )
-# def update_button_styles(top10_n, legend_n, log_n, bottom10_n, view_mode_data):
-#     ctx = dash.callback_context
-
-#     if not ctx.triggered:
-#         # This shouldn't normally execute due to prevent_initial_call=True
-#         return ['btn-outline-primary'] * 4
-
-#     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-#     # Define default class as outline
-#     styles = ['btn-outline-primary'] * 4
-#     index_map = {
-#         'top10-button': 0,
-#         'toggle-legend-button': 1,
-#         'toggle-log-button': 2,
-#         'bottom10-button': 3
-#     }
-
-#     # Activate the clicked button
-#     if button_id in index_map:
-#         styles[index_map[button_id]] = 'btn-primary'
-
-#     return styles
-
-# Light/Dark Mode
+# Light/Dark Mode logic
 clientside_callback(
     '''
     (switchOn) => {
@@ -615,14 +542,14 @@ app.layout = dbc.Container([
     dcc.Store(id='ipv4-time-series-dataset', storage_type='memory'),
     dcc.Store(id='ipv6-dataset', storage_type='memory'),
     dcc.Store(id='intermediate-data-from-grid', storage_type='memory'),
-    dcc.Store(id='active-accordion-item-store', data={'active_item': 'log'}),
-    dcc.Store(id='bar-accordion-store'),
+    dcc.Store(id='pie-accordion-store', data={'active_item': 'log'}),
+    dcc.Store(id='bar-accordion-store', data={'active_item': 'linear'}),
     dcc.Store(id='toggle-legend-store', data=False),
-    dcc.Store(id='toggle-axis-store', data='linear'),
     dcc.Store(id='view-mode-store', data={'view_mode': 'top10'}),
     dcc.Store(id='log-scale-store', data={'log_scale_active': False}),
     # State Debugging:
     dcc.Store(id='button-state-store', data={'top10_clicked': 0, 'legend_clicked': 0, 'log_clicked': 0, 'bottom10_clicked': 0}),
+
     # Header section
     dbc.Row([
         dbc.Col([

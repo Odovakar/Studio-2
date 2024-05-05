@@ -1,48 +1,25 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+'''The main concept of the dynamic card handler is revolving around '''
+
 class DynamicCardHandler:
     def __init__(self, data_handler):
         self.data_handler = data_handler
 
-    #
     def get_card(self, card_contents):
         return html.Div([
             dbc.Card([
                 html.P(card_contents)
             ])#, style={'padding': '10px'}
         ])#, style={'margin-top': 'auto', 'height': '33%'}
-
-    def get_dropdown(self, title, id, dropdown_options, **kwargs):
-        return html.Div([
-            html.H4(f'{title}'),
-            dcc.Dropdown(
-                id=id,
-                options=dropdown_options,
-                **kwargs
-            ),
-        ])
-    
-    def get_toggle_button(self):
-        return html.Div([
-            dbc.Button('Toggle Legend', id='toggle-legend-button', className='toggle-legend-button', n_clicks=0)
-        ])#, style={'justify-content': 'flex-end'}
-
-    # def get_toggle_group(self):
-    #     return html.Div([
-    #         dbc.ButtonGroup([
-    #             dbc.Button('Top 5', id='top5', outline=True, className='btn-outline-primary', n_clicks=0),
-    #             dbc.Button('Toggle Legend', id='toggle-legend-button', className='btn-primary', n_clicks=0),
-    #             dbc.Button('Bottom 5', id='bottom5', outline=True, className='btn-outline-primary', n_clicks=0),
-    #         ])
-    #     ])
-
+ 
     def get_control_buttons(self, active_item, active_tab):
         #print(f'Generating controls for {active_item} on {active_tab}')
         if active_tab == 'pie-tab':
             if active_item == 'SUNBURST':
                 return html.Div()
-            elif active_item == 'TotalPool':
+            elif active_item in ['TotalPool', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC']:
                 button_group = dbc.ButtonGroup([
                                     dbc.Button('Top 10', id='top10-button', key='top10-button', outline=True, className='btn-outline-primary', n_clicks=0),
                                     dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary'),
@@ -50,18 +27,23 @@ class DynamicCardHandler:
                                     dbc.Button('Bottom 10', id='bottom10-button', outline=True, className='btn-outline-primary')
                                 ], className='mb-2')
                 return button_group
-            elif active_item in ['ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'RIR']:
-                return dbc.Button('Toggle Legend', id='toggle-legend-button')
+            elif active_item == 'RIR':
+                return dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary')
             else:
                 return html.Div()
         elif active_tab == 'bar-tab':
-            if active_item in ['RIR', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC']:
-                return dbc.Button('Toggle Axis', id='toggle-axis-button')
+            if active_item in ['ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC']:
+                button_group = dbc.ButtonGroup([
+                                    dbc.Button('Top 10', id='top10-button', key='top10-button', outline=True, className='btn-outline-primary', n_clicks=0),
+                                    dbc.Button('Log', id='toggle-log-button', outline=True, className='btn-outline-primary'),
+                                    dbc.Button('Bottom 10', id='bottom10-button', outline=True, className='btn-outline-primary')
+                ], className='mb-2')
+                return button_group
         return html.Div()
 
     def get_accordion(self, title, id, accordion_options, **kwargs):
         return html.Div([
-            html.H4(f'{title}'),#, style={'margin-bottom': '5px'}
+            html.H4(f'{title}'),
             dbc.Accordion(
                 accordion_options,
                 id=id,
@@ -69,24 +51,10 @@ class DynamicCardHandler:
             ),
         ])
 
-    def get_scale_toggle_button(self):
-        return html.Div([
-            dbc.Button(
-                'Toggle X-Axis Scale', 
-                id='toggle-xaxis-scale-button', 
-                className='mb-2',
-                n_clicks=0
-            ),
-        ])
-
     def get_content(self, active_dataset, active_tab):
         if not active_dataset or 'data' not in active_dataset:
             return 'Please select a dataset and ensure data is loaded.'
-
-
         dataset = active_dataset.get('dataset')
-        toggle_button = None
-
 
         # CHOROPLETH TAB
         if active_tab == 'choropleth-tab':
@@ -156,8 +124,7 @@ class DynamicCardHandler:
                 #Instantiating Contents
                 card_controls = self.get_accordion(title, id, accordion_options)
                 # Return Contents
-                return card_controls
-            
+                return card_controls 
         # PIE TAB
         elif active_tab == 'pie-tab':
             if dataset == 'ipv4':
@@ -210,7 +177,7 @@ class DynamicCardHandler:
                 card_controls = self.get_accordion(title, id, accordion_options)
                 #toggle_button = self.get_toggle_button()
                 return card_controls
-        
+        # BAR TAB
         elif active_tab == 'bar-tab':
             #print(active_tab, 'we\'re here in the dyn card conditional')
             if dataset == 'ipv4':
@@ -218,11 +185,6 @@ class DynamicCardHandler:
                 title = 'Bar Chart Options'
                 id = 'bar-selector-accordion'
                 accordion_options = [
-                    # dbc.AccordionItem(
-                    #     'This chart shows the total pool of allocated ipv4 addresses by country',
-                    #     item_id = 'TotalPool',
-                    #     title='Total IPv4 Pool Distribution by Country',
-                    # ),
                     dbc.AccordionItem(
                         'This chart visualises each RIR cumulative sum of currently allocated IPv4 addresses',
                         item_id = 'RIR',
@@ -257,6 +219,7 @@ class DynamicCardHandler:
 
                 card_controls = self.get_accordion(title, id, accordion_options)
                 return card_controls
+        # CUSTOM TAB
         elif active_tab == 'custom-tab':
             #print('we are in the dyn card elif active tab conditional') both of these are good
             if dataset == 'ipv4' or 'whoisv4':
