@@ -63,9 +63,11 @@ class BarChartHandler:
         hover_data = None
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
 
-        print('in bar chart generate figure', log_scale_active)
-        print('in bar chart generate figure', view_mode)
-        print("Log scale active:", log_scale_active)
+
+        #print('dataframe is', active_dataset.get('dataset'))
+        #print('in bar chart generate figure', log_scale_active)
+        #print('in bar chart generate figure', view_mode)
+        #print("Log scale active:", log_scale_active)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item)
        # customdata = self.populate_custom_data(active_item, active_dataset)
         #hover_template = self.hover_template_handler.get_pie_hover_template(active_item, customdata)
@@ -89,10 +91,12 @@ class BarChartHandler:
         #         'bordercolor':'rgba(255, 255, 255, 0)'
         #     }
         # }
+
+        #print(active_dataset)
         if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'RIR':
-                rir_sum = self.data_handler.json_df.groupby('RIR')['ipv4'].sum().reset_index() 
-                data_frame=rir_sum
+                rir_sum = self.data_handler.json_df.groupby('RIR')['ipv4'].sum().reset_index()
+                df=rir_sum
                 x='RIR'
                 y='ipv4'
 
@@ -126,10 +130,26 @@ class BarChartHandler:
                     'autosize':True,
                     'margin': dict(t=50, b=50, l=50, r=50),
                 }
+
+        if active_dataset.get('dataset') == 'v4_allocation':  
+            if active_item == 'UNVSALLOCATED':
+                df = pd.read_json(active_dataset['data'], orient='split')
+                #print('inside conditional in bar chart unvsallocated')
+                stack_fig = px.bar(
+                    df,
+                    x = 'Registry',
+                    y = 'Value',
+                    barmode='group',
+                    color='Status',
+                    template=template,
+                    color_continuous_scale=px.colors.sequential.Viridis,
+                )
+
+                return stack_fig
         
-        fig = px.bar(data_frame, x, y, color=y,color_continuous_scale=px.colors.sequential.Viridis, template=template) #, custom_data=customdata, hover_data=hover_data
+        fig = px.bar(df, x, y, color=y,color_continuous_scale=px.colors.sequential.Viridis, template=template) #, custom_data=customdata, hover_data=hover_data
         #fig.update_traces(**trace_options)
-        fig.update_layout(**layout_options)
+        #fig.update_layout(**layout_options)
 
         return fig
 

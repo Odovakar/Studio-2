@@ -1,6 +1,7 @@
 import plotly.express as px
 import numpy as np
 import plotly.graph_objs as go
+import pandas as pd
 
 class PieChartHandler:
     def __init__(self, data_handler, hover_template_handler):
@@ -147,85 +148,24 @@ class PieChartHandler:
                 #pull = pull = [0.2 if percent < 1 else 0 for percent in df['percentv4']]
                 values = value_column
                 names = 'name'
-                # hover_data = {
-                #     'name': True,
-                #     'ipv4': ':,.0f',
-                #     'pop': ':,.0f',
-                #     'percentv4': ':.2f'
-                # }
 
-            # elif active_item == 'ARIN':
-            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'ARIN')
-            #     print(df.columns.tolist())
-            #     log_values = np.log10(df['percentv4'] + 0.0001)
-            #     df['log_percentv4'] = (log_values - np.min(log_values)) / (np.max(log_values) - np.min(log_values))
-            #     if view_mode == 'top10':
-            #         df = df.nlargest(10, 'percentv4')
-            #     elif view_mode == 'bottom10':
-            #         df = df.nsmallest(10, 'percentv4')
-
-            #     values = value_column
-            #     values = 'percentv4'
-            #     names = 'name'
-            
-            # elif active_item == 'APNIC':
-            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'APNIC')
-            #     values = 'percentv4'
-            #     names = 'name'
-            
-            # elif active_item == 'LACNIC':
-            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'LACNIC')
-            #     values = 'percentv4'
-            #     names = 'name'
-
-            # elif active_item == 'AFRINIC':
-            #     df = self.calculate_rir_country_data(self.data_handler.json_df, 'AFRINIC')
-            #     values = 'percentv4'
-            #     names = 'name'
             elif active_item == 'SUNBURST':
                 df = self.data_handler.json_df
-                #print(df.dtypes)
-                #print(customdata[0])
-                '''Bug Squashing'''
-                # Check for any unique non-numeric values that might be interpreted as strings
-                #print(df['pop'].apply(lambda x: type(x)).unique())
-
-                # Quick summary to find any other anomalies
-                #print(df['pop'].describe())
-
-                # columns_to_check = ['pop', 'ipv4', 'percentv4', 'pcv4']
-
-                # # Step 1: Check for NaNs in each column and print the counts
-                # print("NaN counts in each column:")
-                # for column in columns_to_check:
-                #     nan_count = df[column].isna().sum()
-                #     print(f"{column}: {nan_count}")
-
-                # # Step 2: Print rows where any of the specified columns have NaN values
-                # print("\nSample rows with NaN values:")
-                # nan_rows = df[df[columns_to_check].isna().any(axis=1)]
-                # print(nan_rows.head())
-                # df['ipv4'] = df['ipv4'].astype(int)
-                # df['pop'] = df['pop'].astype(int)
-                # df['percentv4'] = df['percentv4'].astype(float)
-                # df['pcv4'] = df['pcv4'].astype(float)
-
                 df['pop'].fillna(0, inplace=True)
                 df['percentv4'].fillna(0, inplace=True)  
                 df['percentv4'] = df['percentv4'] / 100
-                #values = 'percentv4'
-                #names = 'name'
+
                 sun_fig = px.sunburst(
                     df,
                     path=['RIR', 'name'],
                     values='ipv4', 
                     color='RIR',
-                    color_continuous_scale='Viridis',
+                    color_continuous_scale=px.colors.sequential.Viridis,
                     template=template,
                     hover_data={
-                        'pop':True,
+                        #'pop':True,
                         'ipv4':True,
-                        'percentv4':True
+                        #'percentv4':True
                     },
                     branchvalues='total',
                 )
@@ -247,9 +187,9 @@ class PieChartHandler:
                 sun_fig.update_traces(
                     hovertemplate=(
                         "<b>%{label}</b><br>" +
-                        "Population: %{customdata[0]:,}<br>" +  # Adds commas as thousands separators
-                        "IPv4 Address Count: %{customdata[1]:,}<br>" +  # Adds commas here too, if needed
-                        "Percent of IPv4 Pool: %{customdata[2]:.2%}<br>"  # Correctly formats percentage
+                        #"Population: %{customdata[0]:,}<br>" +  # Adds commas as thousands separators
+                        "IPv4 Address Count: %{customdata[0]:,}<br>"  # Adds commas here too, if needed
+                        #"Percent of IPv4 Pool: %{customdata[2]:.2%}<br>"  # Correctly formats percentage
                     )
                 )
                     
@@ -261,10 +201,25 @@ class PieChartHandler:
                 #print("Custom Data: ", sun_fig.data[0].customdata)
                 #print("Current Hover Template: ", sun_fig.data[0].hovertemplate)
                 return sun_fig
+            
+
+
             else:
                 df = self.get_data_by_rir(active_item)
                 values = 'percentv4'
                 names = 'name'
+        if active_dataset.get('dataset') == 'v4_allocation': 
+            if active_item == 'UNVSALLOCATED':
+                df = pd.read_json(active_dataset['data'], orient='split')
+                print(df.columns.tolist())
+                sun_fig = px.sunburst(
+                    df,
+                    path=['Registry', 'Status'], values='Value',
+                    template=template,
+                    color_continuous_scale=px.colors.sequential.Viridis,
+                )
+
+                return sun_fig
 
         pie_fig = go.Figure(
             data=[go.Pie(

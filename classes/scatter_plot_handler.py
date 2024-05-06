@@ -1,6 +1,7 @@
 import plotly.express as px
 import pandas as pd
 import numpy as np
+from io import StringIO
 
 class ScatterHandler:
     def __init__(self, data_handler):#, hover_template_handler
@@ -21,7 +22,8 @@ class ScatterHandler:
         layout_options = []
         fig = None
         template = 'bootstrap' if switch_on else 'bootstrap_dark'
-        active_dataset = active_dataset.get('dataset')
+        print(active_dataset)
+        data_json_stream = StringIO(active_dataset['data'])
 
         ipv4_group_to_ticks = {
             '0-10k': 0-10000,        # Midpoint of the range as representative value
@@ -33,11 +35,14 @@ class ScatterHandler:
             '1B+': 1500000000
         }
 
-        if active_dataset == 'ipv4':
+        
+        if active_dataset.get('dataset') == 'ipv4':
             if active_item == 'normal':
+                df = pd.read_json(data_json_stream, orient='split')
                 selected, unselected = self.selected_unselected_functionality()
+                
                 scatter_fig = px.scatter(
-                    data_frame=self.data_handler.json_df,
+                    df,
                     x='pop',
                     y='ipv4',
                     color='ipv4_grouping',
@@ -64,7 +69,7 @@ class ScatterHandler:
                                 'Pct Per Capita: %{customdata[2]:.2f}%'
                 
                 # Update marker sizes
-                max_ipv4 = self.data_handler.json_df['ipv4'].max()
+                max_ipv4 = df['ipv4'].max()
                 desired_max_marker_size = 25
                 sizeref = 2. * max_ipv4 / (desired_max_marker_size ** 3)
                 scatter_fig.update_traces(
@@ -91,10 +96,10 @@ class ScatterHandler:
                 )
 
             elif active_item == 'log':
-                df = self.data_handler.json_df
+                df = pd.read_json(data_json_stream, orient='split')
                 selected, unselected = self.selected_unselected_functionality()
                 scatter_fig = px.scatter(
-                    data_frame=df,
+                    df,
                     y='pcv4',
                     x='pop',
                     size='ipv4',
@@ -114,7 +119,7 @@ class ScatterHandler:
                 )
                 
                 # Tweaks to the plots
-                max_ipv4 = self.data_handler.json_df['ipv4'].max()
+                max_ipv4 = df['ipv4'].max()
                 desired_max_marker_size = 27
                 sizeref = 2. * max_ipv4 / (desired_max_marker_size ** 3.5)
 
@@ -152,4 +157,13 @@ class ScatterHandler:
                     clickmode='event+select'
                 )
 
+            if active_item == 'v6log':
+                df = pd.read_json(data_json_stream, orient='split')
+                print(df.columns.tolist())
+
+                df['ipv6'] = df['ipv6'].apply(lambda x: x if x > 0 else 1.1)
+                df['log_ipv6'] = np.log10(df['ipv6'])
+                px.scatter(
+
+                )
             return scatter_fig
