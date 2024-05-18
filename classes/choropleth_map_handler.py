@@ -143,7 +143,7 @@ class ChoroplethHandler:
         if active_item == 'v6log':
             #df = pd.read_json(data_json_stream, orient='split')
             df = pd.read_json(data_json_stream, orient='split')
-            print(df.columns.tolist())
+            #print(df.columns.tolist())
 
             df['ipv6'] = df['ipv6'].apply(lambda x: x if x > 0 else 1.1)
             df['log_ipv6'] = np.log10(df['ipv6'])
@@ -171,7 +171,7 @@ class ChoroplethHandler:
             )
             map_fig.update_layout(
                 coloraxis_colorbar=dict(
-                    title="Log IPv4",
+                    title="Log IPv6",
                     orientation="h",
                     x=0.5,
                     xanchor="center",

@@ -28,9 +28,10 @@ external_stylesheets = [
 # Initialising DataHandler
 data_handler = DataHandler(
     json_url='https://raw.githubusercontent.com/impliedchaos/ip-alloc/main/ip_alloc.json',
-    whois_v4_pop_csv='whois_v4_pop.csv',
+    whois_v4_pop_csv='whoisv4_pop_gdp.csv',
     population_csv='wpopdata.csv',
     whoisv6_allocation_csv='ipv6_allocations.csv'
+    
 )
 
 data_handler.fetch_json_data()
@@ -129,7 +130,7 @@ def update_ipv4_dataset(n_whoisv4, data):
         if data is None or 'dataset' not in data:
             data_handler.fetch_json_data()
             ipv4_dataset = {'dataset': 'ipv4', 'data': data_handler.json_df.to_json(date_format='iso', orient='split')}
-            print(ipv4_dataset.get('dataset'), 'successfully populated')
+            #print(ipv4_dataset.get('dataset'), 'successfully populated')
             return ipv4_dataset
 
 @app.callback(
@@ -189,12 +190,13 @@ def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, 
     [Input('ipv4-dataset', 'data'),
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
+     Input('ipv4-time-series-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('scatter-selector-accordion', 'active_item'),
      Input('switch', 'value')],
     #prevent_initial_call=True,
 )
-def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scatter_selector_accordion, switch_on):
+def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, time_series_data, active_tab, scatter_selector_accordion, switch_on):
     if active_tab != 'scatter-tab':
         raise dash.exceptions.PreventUpdate
     
@@ -202,6 +204,9 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
     active_dataset = None
     if scatter_selector_accordion in ['log', 'normal', 'v6log']:
         active_dataset = ipv4_data
+    if scatter_selector_accordion == 'animated':
+        active_dataset = time_series_data
+        print(active_dataset.get('dataset'))
 
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
@@ -221,15 +226,17 @@ def update_scatter_plots(ipv4_data, whois_ipv4_data, ipv6_data, active_tab, scat
      Input('allocation-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('switch', 'value'),
+     Input('v4v6-button-store', 'data'),
      Input('toggle-legend-store', 'data'),
      Input('view-mode-store', 'data'),
      Input('log-scale-store', 'data')],
      prevent_initial_call=True
 )
-def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, allocation_data, active_tab, switch_on, show_legend, view_mode_data, log_scale_data):# , show_legendn_clicks, , show_legend
+def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, allocation_data, active_tab, switch_on, allocation_version, show_legend, view_mode_data, log_scale_data):# , show_legendn_clicks, , show_legend
     if active_tab != 'pie-tab':
         raise dash.exceptions.PreventUpdate
     #print('initial view mode data in the update_pie_figure in main', view_mode_data)
+    #print(allocation_version)
     active_dataset = None
     if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC' or 'SUNBURST':
         active_dataset = ipv4_data
@@ -239,7 +246,7 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, alloca
 
     if active_item == 'UNVSALLOCATED':
         active_dataset = allocation_data
-        print('we made it')
+        #print('we made it')
 
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
@@ -251,11 +258,11 @@ def update_pie_figure(active_item, ipv4_data, whois_ipv4_data, ipv6_data, alloca
         view_mode_data = {'view_mode': 'all'}
 
     log_scale_active = log_scale_data['log_scale_active'] if log_scale_data else False
-    print('Log scale active state received in update pie chart callback:', log_scale_active)
-
+    #print('Log scale active state received in update pie chart callback:', log_scale_active)
+    #print(allocation_version, 'end of update pie in main')
     #print('Updating Store with:', {'active_item': active_item})
     view_mode = view_mode_data['view_mode']
-    figure = pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, show_legend, view_mode, log_scale_active) #, show_legendshow_legend, , opacity, show_legend
+    figure = pie_chart_handler.generate_figure(active_item, active_dataset, switch_on, allocation_version, show_legend, view_mode, log_scale_active) #, allocation_versionshow_legendshow_legend, , opacity, show_legend
     return figure#, {'active_item': active_item}
 
 
@@ -287,20 +294,22 @@ def update_pie_active_item_store(pie_active_item, active_tab):
      Input('allocation-dataset', 'data'),
      Input('graph-tabs', 'value'),
      Input('switch', 'value'),
+     Input('v4v6-button-store', 'data'),
      Input('view-mode-store', 'data'),
      Input('log-scale-store', 'data')],
     prevent_initial_call=True,
 )
-def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, allocation_data, active_tab, switch_on, view_mode_data, log_scale_data):
+def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, allocation_data, active_tab, switch_on, allocation_version, view_mode_data, log_scale_data):
     if active_tab != 'bar-tab':
         raise dash.exceptions.PreventUpdate
-
+    #print(allocation_version, 'gotem')
     #df = pd.read_json(allocation_data['data'], orient='split')
     #print('works',df.head())
-
+    #print(log_scale_data, 'top of bar chart callback')
     #print(active_item, 'in the good ole update_bar_chart function')
     active_dataset = None
-    if active_item == 'TotalPool' or 'RIR' or 'RIPENCC' or 'ARIN' or 'APNIC' or 'LACNIC':
+    print(allocation_data)
+    if active_item in ['TotalPool', 'RIR', 'RIPENCC', 'ARIN', 'APNIC', 'AFRINIC', 'GLOBALBAR' 'LACNIC', 'RIRV6', 'RIPENCCV6', 'ARINV6', 'APNICV6', 'LACNICV6']:
         active_dataset = ipv4_data
         #df = pd.read_json(active_dataset['data'], orient='split')
         #print(df.head())
@@ -313,17 +322,17 @@ def update_bar_chart(active_item, ipv4_data, whois_ipv4_data, ipv6_data, allocat
         #for key in active_dataset:
         #    print(key)
         #print('within the conditional in bar chart main')
-        df = pd.read_json(active_dataset['data'], orient='split')
+        #df = pd.read_json(active_dataset['data'], orient='split')
         #print(df.head())
 
     if not active_dataset:
         raise dash.exceptions.PreventUpdate
     
     log_scale_active = log_scale_data['log_scale_active'] if log_scale_data else False
-    print('Log scale active state received in update bar chart callback:', log_scale_active)
+    #print('Log scale active state received in update bar chart callback:', log_scale_active)
 
     view_mode = view_mode_data['view_mode']
-    figure = bar_chart_handler.generate_figure(active_item, active_dataset, switch_on, log_scale_active, view_mode)
+    figure = bar_chart_handler.generate_figure(active_item, active_dataset, switch_on, allocation_version, log_scale_active, view_mode)
     return figure
 
 @app.callback(
@@ -580,30 +589,9 @@ def update_v4v6_view_mode(n_whoisv4, n_whoisv6, current_allocation_type):
         whoisv4_button = 'btn-outline-primary'
 
     new_version_view = {'allocation_type': new_allocation_type}
-    #print(new_version_view)
+    print(new_version_view)
     return new_version_view, whoisv4_button, whoisv6_button
 
-# Changes the button styling of the IPv4/6 buttongroup on the top right of the UI
-# Function name is a a bit ambiguous because it was created early in the development.
-# @app.callback(
-#     [Output('whoisv4', 'className'),
-#      Output('whoisv6', 'className'),],
-#     [Input('whoisv4', 'n_clicks'),
-#      Input('whoisv6', 'n_clicks'),],
-#     prevent_initial_call=True,
-# )
-# def update_button_styles(n_whoisv6, n_whoisv4):
-#     ctx = callback_context
-#     if not ctx.triggered:
-#         # When the app loads, set the initial style
-#         return ['btn-primary', 'btn-outline-primary']
-#     else:
-#         button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-#         if button_id == 'whoisv4':
-#             return ['btn-primary', 'btn-outline-primary']
-#         elif button_id == 'whoisv6':
-#             return ['btn-outline-primary', 'btn-primary']
 
 # Light/Dark Mode logic
 clientside_callback(

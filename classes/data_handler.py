@@ -32,6 +32,9 @@ class DataHandler:
                 raise ValueError('WHOIS IPv6 data missing expected columns.')
             self.whoisv6_df['Date'] = pd.to_datetime(self.whoisv6_df['Date'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
             self.whoisv6_df['Year'] = self.whoisv6_df['Year'].astype(int)
+            total_fields = self.whoisv6_df.shape[0] * self.whoisv6_df.shape[1]  # where df.shape[0] is the number of rows and df.shape[1] is the number of columns
+
+            print("Total number of fields in the DataFrame:", total_fields)
             return self.whoisv6_df
         except Exception as e:
             print(f'Failed to load or process WHOIS IPv6 data: {e}')
@@ -125,18 +128,36 @@ class DataHandler:
         return json_df
 
     def create_time_series_df(self):
+        # Starting with the original DataFrame
         ipv4_ts_df = self.whois_ipv4_df
+        
+        # Grouping by Country and Year and aggregating necessary fields
         ipv4_ts_df = ipv4_ts_df.groupby(['Country', 'Year']).agg({
             'ISO-3': 'first', 
             'Registry': 'first', 
             'Date': 'first',
             'Value': 'sum',
-            'Population': 'first'
+            'Population': 'first',
+            'GDPPerCap': 'first'
         }).reset_index()
 
+        # Dropping unnecessary columns
+        ipv4_ts_df.drop(columns=['Registry', 'Date'], axis=1, inplace=True)
+
+        # Convert ISO-3 to RIR if needed
         ipv4_ts_df['RIR'] = ipv4_ts_df['ISO-3'].apply(self.alpha3_to_rir)
-        #print(ipv4_ts_df)
+        
+        # Ensure data is sorted by Country and Year for correct cumulative calculation
+        ipv4_ts_df.sort_values(by=['Country', 'Year'], ascending=[True, True], inplace=True)
+
+        # Calculate cumulative sum of 'Value' within each 'Country' group
+        ipv4_ts_df['Cumulative Value'] = ipv4_ts_df.groupby('Country')['Value'].cumsum()
+        ipv4_ts_df['Size'] = np.sqrt(ipv4_ts_df['Cumulative Value'])
+        # Assigning back to class attribute if needed
         self.ipv4_ts_df = ipv4_ts_df
+
+        # Optionally, return the DataFrame
+        return ipv4_ts_df
 
     def create_allocation_bar_df(self):
         df = self.whois_ipv4_df

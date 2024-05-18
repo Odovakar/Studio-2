@@ -25,3 +25,12 @@ bigboi.py
 backups/stiff
 classes/time_series_handler.py
 classes/__pycache__/time_series_handler.cpython-310.pyc
+backups/SteppingStones/gdp_dropped_bkfill.csv
+backups/SteppingStones/gdp_dropped_filled_nodots.csv
+backups/SteppingStones/gdp_dropped_filled.csv
+backups/SteppingStones/gdp_dropped.csv
+backups/SteppingStones/gdppc_long.csv
+backups/SteppingStones/gdppc_long2.csv
+backups/SteppingStones/gpd.csv
+backups/SteppingStones/whois_v4_dropped.csv
+backups/SteppingStones/whoisv4_pop_gdp.csv

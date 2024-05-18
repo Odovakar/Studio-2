@@ -20,7 +20,7 @@ class DynamicCardHandler:
         if active_tab == 'pie-tab':
             if active_item == 'SUNBURST':
                 return html.Div()
-            elif active_item in ['TotalPool', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC']:
+            elif active_item in ['TotalPool', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC', 'GLOBALBAR']:
                 button_group = dbc.ButtonGroup([
                                     dbc.Button('Top 10', id='top10-button', key='top10-button', outline=True, className='btn-outline-primary', n_clicks=0),
                                     dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary'),
@@ -30,10 +30,20 @@ class DynamicCardHandler:
                 return button_group
             elif active_item == 'RIR':
                 return dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary')
+            elif active_item == 'RIRV6':
+                return dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary')
+            elif active_item in ['ARINV6', 'RIPENCCV6', 'APNICV6', 'LACNICV6', 'AFRINICV6']:
+                button_group = dbc.ButtonGroup([
+                                    dbc.Button('Top 10', id='top10-button', key='top10-button', outline=True, className='btn-outline-primary', n_clicks=0),
+                                    dbc.Button('Legend', id='toggle-legend-button', outline=True, className='btn-outline-primary'),
+                                    dbc.Button('Log', id='toggle-log-button', outline=True, className='btn-outline-primary'),
+                                    dbc.Button('Bottom 10', id='bottom10-button', outline=True, className='btn-outline-primary')
+                                ], className='mb-2')
+                return button_group
             else:
                 return html.Div()
         elif active_tab == 'bar-tab':
-            if active_item in ['ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'AFRINIC']:
+            if active_item in ['ARINV6', 'RIPENCCV6', 'APNICV6', 'LACNICV6', 'AFRINICV6', 'AFRINIC', 'ARIN', 'RIPENCC', 'APNIC', 'LACNIC', 'GLOBALBARV6', 'GLOBALBAR']:
                 button_group = dbc.ButtonGroup([
                                     dbc.Button('Top 10', id='top10-button', key='top10-button', outline=True, className='btn-outline-primary', n_clicks=0),
                                     dbc.Button('Log', id='toggle-log-button', outline=True, className='btn-outline-primary'),
@@ -57,7 +67,7 @@ class DynamicCardHandler:
             return 'Please select a dataset and ensure data is loaded.'
         dataset = active_dataset.get('dataset')
 
-        print(allocation_version.get('allocation_type'))
+        #print(allocation_version.get('allocation_type'))
         # CHOROPLETH TAB
         if active_tab == 'choropleth-tab':
             if allocation_version.get('allocation_type') == 'ipv4':
@@ -84,7 +94,7 @@ class DynamicCardHandler:
                     card_controls,
                     #card_contents
                 ], className = 'dynamic-card-content')
-            elif allocation_version.get('allocation_type') == 'ipv6':
+            if allocation_version.get('allocation_type') == 'ipv6':
                 title = 'Choropleth Map Options'
                 id = 'choropleth-accordion-selector'
                 accordion_options = [
@@ -92,11 +102,6 @@ class DynamicCardHandler:
                         'The map shows a quantile of the upper ranges of the log10 scale of the number of allocated addresses per country. The reasoning for setting the log scale more sensitive to the upper ranges of the scale is to better differentiate the number of allocations to each nation. ',
                         item_id = 'v6log',
                         title='IPv6 Logarithmic View',
-                    ),
-                    dbc.AccordionItem(
-                        'IPv6 more dummy stuff',
-                        #item_id = 'normal',
-                        title = 'Regional Internet Registry\'s Percent of Pool'
                     ),
                 ]
                 # Instantiating Contents
@@ -117,7 +122,7 @@ class DynamicCardHandler:
                 id = 'scatter-selector-accordion'
                 accordion_options = [
                     dbc.AccordionItem(
-                        'The scatter plot visualises the population in the x-axis and number of ipv4 addresses in the y-axis. The size of the plot is related to the cumulative sum of ipv4 addresses attributed to the distinct country. LOGx TODO: Fiks det her!',
+                        'The scatter plot visualises the population in the x-axis and number of ipv4 addresses in the y-axis. The size of the plot is related to the cumulative sum of ipv4 addresses attributed to the distinct country.',
                         item_id = 'log',
                         title='Logarithmic Sum of IPv4 Addresses x Population',
                     ),
@@ -125,6 +130,11 @@ class DynamicCardHandler:
                         'This scatter plot visualises the population in the x-axis and number of ipv4 addresses in the y-axis. The size of the plot is related to the cumulative sum of ipv4 addresses attributed to the distinct country.',
                         item_id = 'normal',
                         title='Custom Grouped Sum of IPv4 addresses from x Population',
+                    ),
+                    dbc.AccordionItem(
+                        '123',
+                        item_id = 'animated',
+                        title='1231233',
                     ),
                 ]
                 
@@ -159,7 +169,7 @@ class DynamicCardHandler:
                 return card_controls 
         # PIE TAB
         elif active_tab == 'pie-tab':
-            if dataset == 'ipv4':
+            if allocation_version.get('allocation_type') == 'ipv4':
                 title = 'Pie Chart Options'
                 id = 'pie-selector-accordion'
                 accordion_options = [
@@ -214,10 +224,54 @@ class DynamicCardHandler:
                 card_controls = self.get_accordion(title, id, accordion_options)
                 #toggle_button = self.get_toggle_button()
                 return card_controls
+            if allocation_version.get('allocation_type') == 'ipv6':
+                title = 'Pie Chart Options'
+                id = 'pie-selector-accordion'
+                accordion_options = [
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv6 addresses between the RIR in the inner branch and by country in the outer branch.',
+                        item_id='SUNBURSTV6',
+                        title='Total IPv6 Addresses Allocated by RIR',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the percentage-wise distribution of IPv6 addresses between the RIRs.',
+                        item_id='RIRV6',
+                        title='Percentage-Wise Division of IPv6 Pool ',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv6 addresses between the countries within the ARIN region.',
+                        item_id='ARINV6',
+                        title='ARIN',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv6 addresses between the countries within the RIPE NCC region.',
+                        item_id='RIPENCCV6',
+                        title='RIPE NCC',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv6 addresses between the countries within the APNIC region.',
+                        item_id='APNICV6',
+                        title='APNIC',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv6 addresses between the countries within the LACNIC region.',
+                        item_id='LACNICV6',
+                        title='LACNIC',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv6 addresses between the countries within the AFRINIC region.',
+                        item_id='AFRINICV6',
+                        title='AFRINIC',
+                    ),
+                ]
+                card_controls = self.get_accordion(title, id, accordion_options)
+                #toggle_button = self.get_toggle_button()
+                return card_controls
         # BAR TAB
         elif active_tab == 'bar-tab':
             #print(active_tab, 'we\'re here in the dyn card conditional')
-            if dataset == 'ipv4':
+            if allocation_version.get('allocation_type') == 'ipv4':
+
                 #print(dataset, 'dataset present in dy_car_hand conditional')
                 title = 'Bar Chart Options'
                 id = 'bar-selector-accordion'
@@ -257,11 +311,59 @@ class DynamicCardHandler:
                         item_id='AFRINIC',
                         title='AFRINIC IPv4 Country Distribution'
                     ),
-
+                    dbc.AccordionItem(
+                        'This chart displays the percentage wise distribution of IPv4 addresses between the countries within the AFRINIC region.',
+                        item_id='GLOBALBAR',
+                        title='GLOBALBAR IPv4 Country Distribution'
+                    ),
                 ]
-
                 card_controls = self.get_accordion(title, id, accordion_options)
                 return card_controls
+            if allocation_version.get('allocation_type') == 'ipv6':
+                print('this works')
+            
+                #print(dataset, 'dataset present in dy_car_hand conditional')
+                title = 'Bar Chart Options'
+                id = 'bar-selector-accordion'
+                accordion_options = [
+                    dbc.AccordionItem(
+                        'This chart visualises each RIR cumulative sum of currently allocated IPv4 addresses',
+                        item_id = 'RIRV6',
+                        title = 'Regional Internet Registry\'s Percent of Pool'
+                    ),
+                    # dbc.AccordionItem(
+                    #     'The visualisation shows how many of the address ranges are allocated vs unallocated',
+                    #     item_id='UNVSALLOCATED',
+                    #     title='Allocated vs Assigned'
+                    # ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv4 addresses between the countries within the RIPE NCC region.',
+                        item_id='RIPENCCV6',
+                        title='RIPE NCC IPv6 Country Distribution'
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv4 addresses between the countries within the ARIN region.',
+                        item_id='ARINV6',
+                        title='ARIN IPv6 Country Distribution',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv4 addresses between the countries within the APNIC region.',
+                        item_id='APNICV6',
+                        title='APNIC IPv6 Country Distribution',
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the cumulative distribution of IPv4 addresses between the countries within the LACNIC region.',
+                        item_id='LACNICV6',
+                        title='LACNIC IPv6 Country Distribution'
+                    ),
+                    dbc.AccordionItem(
+                        'This chart displays the percentage wise distribution of IPv4 addresses between the countries within the AFRINIC region.',
+                        item_id='AFRINICV6',
+                        title='AFRINIC IPv6 Country Distribution'
+                    ),
+                ]
+                card_controls = self.get_accordion(title, id, accordion_options)
+                return card_controls    
         # CUSTOM TAB
         elif active_tab == 'custom-tab':
             #print('we are in the dyn card elif active tab conditional') both of these are good
