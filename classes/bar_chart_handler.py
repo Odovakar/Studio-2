@@ -93,7 +93,7 @@ class BarChartHandler:
         # }
         #print(x_axis, 'outside conditional')
         #print(active_dataset)
-        print(active_item)
+        #print(active_item)
         
         if allocation_version == 'ipv4':
             df = pd.read_json(data_json_stream, orient='split')

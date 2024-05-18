@@ -25,7 +25,7 @@ class ScatterHandler:
         #print(active_dataset)
         data_json_stream = StringIO(active_dataset['data'])
 
-        print(active_item, 'in generate figure scatter plot')
+        #(active_item, 'in generate figure scatter plot')
         ipv4_group_to_ticks = {
             '0-10k': 1e4,
             '10k-100k': 1e5,
@@ -160,7 +160,7 @@ class ScatterHandler:
 
             if active_item == 'v6log':
                 df = pd.read_json(data_json_stream, orient='split')
-                print(df.columns.tolist())
+                #print(df.columns.tolist())
                 selected, unselected = self.selected_unselected_functionality()
                 df['ipv6'] = df['ipv6'].apply(lambda x: x if x > 0 else 1.1)
                 df['log_ipv6'] = np.log10(df['ipv6'])

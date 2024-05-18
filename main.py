@@ -3,7 +3,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback_context, client
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
-import pandas as pd
+from io import StringIO
 
 from classes.data_handler import DataHandler
 from classes.pie_chart_handler import PieChartHandler
@@ -72,52 +72,50 @@ app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callbac
 @app.callback(
     Output('ipv4-time-series-dataset', 'data'),
     [Input('whoisv4', 'n_clicks')],
-    State('ipv4-time-series-dataset', 'data')
+    [State('ipv4-time-series-dataset', 'data')]
 )
-def update_ipv4_time_series_dataset(n_whoisv4, data):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        if data is None or 'dataset' not in data:
-            data_handler.create_time_series_df()
-            ipv4_ts_df = {
-                'dataset': 'ipv4_time_series',
-                'data': data_handler.ipv4_ts_df.to_json(date_format='iso', orient='split')
-            }
-            #print(ipv4_ts_df.get('dataset'), 'time series worked as well')
-            return ipv4_ts_df
+def update_ipv4_time_series_dataset(n_whoisv4, ipv4_ts_dataset):
+    if n_whoisv4 is None:
+        raise dash.exceptions.PreventUpdate
+
+    # Fetch the data
+    data_handler.create_time_series_df()
+    ipv4_ts_dataset = {
+        'dataset': 'ipv4_time_series',
+        'data': data_handler.ipv4_ts_df.to_json(date_format='iso', orient='split')
+    }
+    return ipv4_ts_dataset
 
 @app.callback(
     Output('whois-ipv4-dataset', 'data'),
     [Input('whoisv4', 'n_clicks')],
-    State('whois-ipv4-dataset', 'data')
+    [State('whois-ipv4-dataset', 'data')]
 )
-def update_whoisv4_dataset(n_whoisv4, data):
-    ctx = callback_context
-    if not ctx.triggered:
-        if data is None or 'dataset' not in data:
-            data_handler.fetch_whois_ipv4_data()
-            whois_ipv4_dataset = {'dataset': 'whois_ipv4', 'data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
-            #print(whois_ipv4_dataset.get('dataset'), 'successfully populated')
-            #df = pd.read_json(whois_ipv4_dataset['data'], orient='split')
-            #print(df.head())
-            return whois_ipv4_dataset
+def update_whoisv4_dataset(n_whoisv4, whois_ipv4_dataset):
+    if n_whoisv4 is None:
+        raise dash.exceptions.PreventUpdate
+
+    # Fetch the data
+    data_handler.fetch_whois_ipv4_data()
+    whois_ipv4_dataset = {'dataset': 'whois_ipv4', 'data': data_handler.whois_ipv4_df.to_json(date_format='iso', orient='split')}
+    return whois_ipv4_dataset
 
 @app.callback(
-        Output('allocation-dataset', 'data'),
-        [Input('whoisv4', 'n_clicks')],
-        State('allocation-dataset', 'data')
+    Output('allocation-dataset', 'data'),
+    [Input('whoisv4', 'n_clicks')],
+    [State('allocation-dataset', 'data')]
 )
-def update_allocation_bar_dataset(n_whoisv4, data):
-    ctx = callback_context
-    if not ctx.triggered:
-        if data is None or 'dataset' not in data:
-            data_handler.create_allocation_bar_df()
-            allocation_df = {
-                'dataset': 'v4_allocation',
-                'data': data_handler.allocation_df.to_json(orient='split')
-            }
-           #print(allocation_df.columns.tolist())
-            return allocation_df
+def update_allocation_bar_dataset(n_whoisv4, allocation_dataset):
+    if n_whoisv4 is None:
+        raise dash.exceptions.PreventUpdate
+
+    # Fetch the data
+    data_handler.create_allocation_bar_df()
+    allocation_dataset = {
+        'dataset': 'v4_allocation',
+        'data': data_handler.allocation_df.to_json(orient='split')
+    }
+    return allocation_dataset
 
 @app.callback(
     Output('ipv4-dataset', 'data'),
@@ -125,14 +123,15 @@ def update_allocation_bar_dataset(n_whoisv4, data):
     State('ipv4-dataset', 'data')
 )
 def update_ipv4_dataset(n_whoisv4, data):
-    ctx = callback_context
-    if not ctx.triggered:
-        if data is None or 'dataset' not in data:
-            data_handler.fetch_json_data()
-            ipv4_dataset = {'dataset': 'ipv4', 'data': data_handler.json_df.to_json(date_format='iso', orient='split')}
-            #print(ipv4_dataset.get('dataset'), 'successfully populated')
-            return ipv4_dataset
+    if n_whoisv4 is None:
+        raise dash.exceptions.PreventUpdate
 
+    # Fetch the data regardless of the current state
+    data_handler.fetch_json_data()
+    ipv4_dataset = {'dataset': 'ipv4', 'data': data_handler.json_df.to_json(date_format='iso', orient='split')}
+    #print(ipv4_dataset.get('dataset'), 'successfully populated')
+    return ipv4_dataset
+        
 @app.callback(
     Output('ipv6-dataset', 'data'),
     [Input('whoisv6', 'n_clicks')],
@@ -140,11 +139,12 @@ def update_ipv4_dataset(n_whoisv4, data):
     prevent_initial_call=True
 )
 def update_ipv6_dataset(n_whoisv6, ipv6_dataset):
-    if not ipv6_dataset:
-        ipv6_dataset = data_handler.fetch_whois_ipv6_data()  # Your method to fetch data
-        ipv6_dataset = {'dataset': 'whois_ipv6', 'data': data_handler.whoisv6_df.to_json(date_format='iso', orient='split')}
-        #df = pd.read_json(ipv6_dataset['data'], orient='split')
-        #print(df.head())
+    if n_whoisv6 is None:
+        raise dash.exceptions.PreventUpdate
+
+    # Fetch the data
+    data_handler.fetch_whois_ipv6_data()
+    ipv6_dataset = {'dataset': 'whois_ipv6', 'data': data_handler.whoisv6_df.to_json(date_format='iso', orient='split')}
     return ipv6_dataset
 
 '''----------Choropleth Map Stuff----------'''
@@ -153,13 +153,14 @@ def update_ipv6_dataset(n_whoisv6, ipv6_dataset):
 @app.callback(
         Output('the-choropleth-map', 'figure'),
         [Input('ipv4-dataset', 'data'),
-        Input('whois-ipv4-dataset', 'data'),
-        Input('ipv6-dataset', 'data'),
+        #Input('whois-ipv4-dataset', 'data'),
+        #Input('ipv6-dataset', 'data'),
         Input('graph-tabs', 'value'),
         Input('choropleth-accordion-selector', 'active_item'),
-        Input('switch', 'value'),],
+        Input('switch', 'value'),
+        Input('v4v6-button-store', 'data')],
 )
-def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, active_item, switch_on):
+def update_choropleth_map(ipv4_dataset, active_tab, active_item, switch_on, allocation_version):
     if active_tab != 'choropleth-tab':
         raise dash.exceptions.PreventUpdate
     
@@ -167,8 +168,18 @@ def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, 
     #print(df.head(), 'main choropleth function')
     #print(active_item)
     active_dataset = None
-    if active_item in ['normal','log','v6log']:
-        active_dataset = ipv4_dataset
+    # Debug prints
+    print(f"allocation_version: {allocation_version}")
+    print(f"active_item: {active_item}")
+    print(f"active_tab: {active_tab}")
+    print(f"dataset: {ipv4_dataset}")
+    #if allocation_version['allocation_type'] == 'ipv4':
+    if allocation_version['allocation_type'] == 'ipv4':
+        if active_item in ['normal','log']:
+            active_dataset = ipv4_dataset
+    if allocation_version['allocation_type'] == 'ipv6':
+        if active_item == 'v6log':
+            active_dataset = ipv4_dataset
 
     # df = pd.read_json(active_dataset['data'], orient='split')
     # print(df.head(), 'main choropleth function')
@@ -180,7 +191,7 @@ def update_choropleth_map(ipv4_dataset, whois_ipv4_data, ipv6_data, active_tab, 
     #df = pd.read_json(active_dataset['data'], orient='split')
     #print(df.head(), 'main choropleth function')
 
-    return choropleth_map_handler.generate_figure(active_item, active_dataset, switch_on)
+    return choropleth_map_handler.generate_figure(active_item, active_dataset, switch_on, allocation_version)
 
 '''----------Scatter Plot----------'''
 # Main bossmeng logic for the scatter plot, this will take in data from all related stores and callbacks and
@@ -379,23 +390,50 @@ def update_custom_graph(virtual_row_data, ipv4_data, whois_ipv4_data, ipv6_data,
      Output('the-ag-grid', 'columnDefs')],
     [Input('ag-switch', 'value'),
      Input('ipv4-dataset', 'data'),
-     Input('whois-ipv4-dataset', 'data')],
+     Input('whois-ipv4-dataset', 'data'),
+     Input('ipv6-dataset', 'data'),
+     Input('v4v6-button-store', 'data')],
     prevent_initial_call=True
 )
-def update_columns(switch_value, ipv4_data, whois_ipv4_data):
+def update_columns(switch_value, ipv4_data, whois_ipv4_data, ipv6_data, allocation_version):
     row_data = []
     column_defs = []
+    
+    #print(switch_value, 'ag grid main')
 
-    dataset = whois_ipv4_data if not switch_value else ipv4_data
+    #print(allocation_version, 'ag grid main')
+
+    #active_dataset = whois_ipv4_data if not switch_value else ipv4_data
         
-    if not switch_value:
-        if ipv4_data:
-            row_data = ag_grid_handler.format_json_data_for_aggrid()
-            column_defs = ag_grid_handler.generate_column_definitions('json')
-    else:
-        if whois_ipv4_data:
+    # if not switch_value:
+    #     if ipv4_data:
+    #         row_data = ag_grid_handler.format_json_data_for_aggrid()
+    #         column_defs = ag_grid_handler.generate_column_definitions('json')
+    # else:
+    #     if whois_ipv4_data:
+    #         row_data = ag_grid_handler.format_whois4_data_for_aggrid()
+    #         column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+
+    if allocation_version['allocation_type'] == 'ipv4':
+        if switch_value:
+            #active_dataset = whois_ipv4_data
             row_data = ag_grid_handler.format_whois4_data_for_aggrid()
-            column_defs = ag_grid_handler.generate_column_definitions('whoisv4')
+            column_defs = ag_grid_handler.generate_column_definitions('whoisv4')#active_dataset = ipv4_data
+
+        else:
+            row_data = ag_grid_handler.format_json_data_for_aggrid()
+            column_defs = ag_grid_handler.generate_column_definitions('v4_pool')
+    if allocation_version['allocation_type'] == 'ipv6':
+        if switch_value:
+            active_dataset = ipv6_data
+            #print(active_dataset.keys())
+            #print(active_dataset['dataset'])
+            row_data = ag_grid_handler.format_whoisv6_data_for_aggrid(active_dataset)
+            column_defs = ag_grid_handler.generate_column_definitions('whoisv6')
+        else:
+            row_data = ag_grid_handler.format_json_data_for_aggrid()
+            column_defs = ag_grid_handler.generate_column_definitions('v6_pool')
+            print(column_defs)
 
     return row_data, column_defs
 
@@ -558,7 +596,9 @@ def toggle_log_scale(n_clicks, log_scale_state):
 @app.callback(
     [Output('v4v6-button-store', 'data'),
      Output('whoisv4', 'className'),
-     Output('whoisv6', 'className')],
+     Output('whoisv6', 'className'),
+     Output('pool-data-text', 'children'),
+     Output('whois-data-text', 'children')],
     [Input('whoisv4', 'n_clicks'),
      Input('whoisv6', 'n_clicks')],
      State('v4v6-button-store', 'data')
@@ -589,8 +629,13 @@ def update_v4v6_view_mode(n_whoisv4, n_whoisv6, current_allocation_type):
         whoisv4_button = 'btn-outline-primary'
 
     new_version_view = {'allocation_type': new_allocation_type}
+
+    # Update H6 text based on the selected allocation type
+    pool_data_text = 'IPv4 Pool Data' if new_allocation_type == 'ipv4' else 'IPv6 Pool Data'
+    whois_data_text = 'IPv4 WHOIS Data' if new_allocation_type == 'ipv4' else 'IPv6 WHOIS Data'
+
     print(new_version_view)
-    return new_version_view, whoisv4_button, whoisv6_button
+    return new_version_view, whoisv4_button, whoisv6_button, pool_data_text, whois_data_text
 
 
 # Light/Dark Mode logic
@@ -663,11 +708,11 @@ app.layout = dbc.Container([
                         id='graph-tabs',
                         value='choropleth-tab',
                         children=[
-                            dcc.Tab(label='Choropleth Map', value='choropleth-tab', children=[dcc.Graph(id='the-choropleth-map', style={'height':'45vh'}, className='dbc')], className='tab-content dbc'),
-                            dcc.Tab(label='Scatter Plot', value='scatter-tab', children=[dcc.Graph(id='the-scatter-plot', style={'height':'45vh'}, className='dbc')], className='tab-content dbc'),
-                            dcc.Tab(label='Pie Chart', value='pie-tab', children=[dcc.Graph(id='the-pie-chart', style={'height':'45vh'})], className='tab-content'),
-                            dcc.Tab(label='Bar Chart', value='bar-tab', children=[dcc.Graph(id='the-bar-chart', style={'height':'45vh'})], className='tab-content'),
-                            dcc.Tab(label='Custom Graph', value='custom-tab', children=[dcc.Graph(id='the-custom-chart', figure={})], className='tab-content dbc'),
+                            dcc.Tab(label='Choropleth Map', value='choropleth-tab', children=[dcc.Loading(dcc.Graph(id='the-choropleth-map', style={'height':'45vh'}, className='dbc'))], className='tab-content dbc'),
+                            dcc.Tab(label='Scatter Plot', value='scatter-tab', children=[dcc.Loading(dcc.Graph(id='the-scatter-plot', style={'height':'45vh'}, className='dbc'))], className='tab-content dbc'),
+                            dcc.Tab(label='Pie Chart', value='pie-tab', children=[dcc.Loading(dcc.Graph(id='the-pie-chart', style={'height':'45vh'}))], className='tab-content'),
+                            dcc.Tab(label='Bar Chart', value='bar-tab', children=[dcc.Loading(dcc.Graph(id='the-bar-chart', style={'height':'45vh'}))], className='tab-content'),
+                            dcc.Tab(label='Custom Graph', value='custom-tab', children=[dcc.Loading(dcc.Graph(id='the-custom-chart', figure={}))], className='tab-content dbc'),
                         ], className='sec2-graph-tabs')  # Classname sets tab width
                 ], className='sec2-card-body')
             ], className='sec2-tab-card'),
@@ -693,37 +738,44 @@ app.layout = dbc.Container([
                         ]),
                         dbc.Col([
                             html.Div([
-                                html.H6('IPv4 Pool Data'),
+                                html.H6(id='pool-data-text', children='IPv4 Pool Data'),
                                 dbc.Switch(id='ag-switch', value=True, className='d-inline-block ms-1', persistence=True),
-                                html.H6('IPv4 WHOIS Data'),
+                                html.H6(id='whois-data-text', children='IPv4 WHOIS Data'),
                             ], className='sec1-button-column', style={'padding-right': '0.5rem', 'padding-bottom': '0.2rem'}),
                         ]),
                     ]),  
 
                     dbc.Container([
-                        dag.AgGrid(
-                            id='the-ag-grid',
-                            rowData=[],
-                            columnDefs=[],
-                            className='ag-theme-alpine',
-                            style={'height': '25vh'},
-                            columnSize='sizeToFit',
-                            dashGridOptions={
-                                'pagination': True,
-                                #'paginationAutoPageSize': True,
-                                'rowHeight': 28,
-                                'headerHeight': 35,
-                                'suppressPaginationPanel': True,
-                                'rowSelection': 'multiple',
-                                'animateRows': False,
-                                'suppressScrollOnNewData':True,
-                            },
-                            defaultColDef={
-                                'flex': 1,
-                                'minWidth': 100,
-                                'filter': True,
-                            },
-                        )
+                        dcc.Loading(
+                            id='loading-1',
+                            type='default',
+                            children=html.Div([
+                                dag.AgGrid(
+                                    id='the-ag-grid',
+                                    rowData=[],
+                                    columnDefs=[],
+                                    className='ag-theme-alpine',
+                                    style={'height': '25vh'},
+                                    columnSize='sizeToFit',
+                                    dashGridOptions={
+                                        'pagination': True,
+                                        #'paginationAutoPageSize': True,
+                                        'rowHeight': 28,
+                                        'headerHeight': 35,
+                                        'suppressPaginationPanel': True,
+                                        'rowSelection': 'multiple',
+                                        'animateRows': False,
+                                        'suppressScrollOnNewData':True,
+                                    },
+                                    defaultColDef={
+                                        'flex': 1,
+                                        'minWidth': 100,
+                                        'filter': True,
+                                    },
+                                )
+                            ])
+                        ),
+
                     ],fluid=True, className='dbc-ag-grid grid-container')
                 ])
             ], className='h-100')

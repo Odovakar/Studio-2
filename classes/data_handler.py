@@ -32,10 +32,9 @@ class DataHandler:
                 raise ValueError('WHOIS IPv6 data missing expected columns.')
             self.whoisv6_df['Date'] = pd.to_datetime(self.whoisv6_df['Date'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
             self.whoisv6_df['Year'] = self.whoisv6_df['Year'].astype(int)
-            total_fields = self.whoisv6_df.shape[0] * self.whoisv6_df.shape[1]  # where df.shape[0] is the number of rows and df.shape[1] is the number of columns
-
-            print("Total number of fields in the DataFrame:", total_fields)
-            return self.whoisv6_df
+            #total_fields = self.whoisv6_df.shape[0] * self.whoisv6_df.shape[1]  # where df.shape[0] is the number of rows and df.shape[1] is the number of columns
+            self.whoisv6_df['formatted_ipv6_count'] = self.whoisv6_df['Prefix'].apply(self.calculate_and_format_ipv6_addresses)
+            #print(self.whoisv6_df.head(20))
         except Exception as e:
             print(f'Failed to load or process WHOIS IPv6 data: {e}')
 
@@ -104,6 +103,9 @@ class DataHandler:
         return json_df[(json_df['pop'] > 800) & (json_df['name'] != 'World')]
 
     def enhance_dataframe(self, json_df):
+        # print(json_df.columns.tolist(), 'data handler enhance_dataframe function')
+        # print(json_df.dtypes, 'data handler enhance_dataframe function')
+        # print(json_df.describe, 'data handler enhance_dataframe function')
         json_df['iso_alpha_3'] = json_df['country_code'].apply(self.alpha2_to_alpha3)
         json_df['ipv4_grouping'] = json_df['ipv4'].apply(self.assign_ipv4_grouping)
         json_df['RIR'] = json_df['iso_alpha_3'].apply(self.alpha3_to_rir)
@@ -225,3 +227,23 @@ class DataHandler:
             return country.name
         else:
             return 'Unknown'
+    
+    @staticmethod    
+    def calculate_and_format_ipv6_addresses(prefix_length):
+        host_bits = 128 - prefix_length
+        num_addresses = 2 ** host_bits
+        if num_addresses >= 1e18:
+            trillions = num_addresses // 1e18
+            remainder = num_addresses % 1e18
+            formatted_number = f"{trillions:,}.{int(remainder / (1e18 / 10**3)):.0f}e+18"
+        elif num_addresses >= 1e15:
+            formatted_number = f"{num_addresses / 1e15:.0f} trillion"
+        elif num_addresses >= 1e12:
+            formatted_number = f"{num_addresses / 1e12:.0f} billion"
+        elif num_addresses >= 1e9:
+            formatted_number = f"{num_addresses / 1e9:.0f} million"
+        elif num_addresses >= 1e6:
+            formatted_number = f"{num_addresses / 1e6:.0f} thousand"
+        else:
+            formatted_number = f"{num_addresses:,}"
+        return formatted_number

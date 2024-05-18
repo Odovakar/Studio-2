@@ -70,7 +70,7 @@ class DynamicCardHandler:
         #print(allocation_version.get('allocation_type'))
         # CHOROPLETH TAB
         if active_tab == 'choropleth-tab':
-            if allocation_version.get('allocation_type') == 'ipv4':
+            if allocation_version['allocation_type'] == 'ipv4':
                 title = 'Choropleth Map Options'
                 id = 'choropleth-accordion-selector'
                 accordion_options = [
@@ -94,7 +94,7 @@ class DynamicCardHandler:
                     card_controls,
                     #card_contents
                 ], className = 'dynamic-card-content')
-            if allocation_version.get('allocation_type') == 'ipv6':
+            if allocation_version['allocation_type'] == 'ipv6':
                 title = 'Choropleth Map Options'
                 id = 'choropleth-accordion-selector'
                 accordion_options = [
@@ -132,9 +132,9 @@ class DynamicCardHandler:
                         title='Custom Grouped Sum of IPv4 addresses from x Population',
                     ),
                     dbc.AccordionItem(
-                        '123',
+                        'This scatter plot displays the relation between the GDP per capita, population and the cumulative attribution of IPv4 addresses held by each country globally over since 1982.',
                         item_id = 'animated',
-                        title='1231233',
+                        title='Animated Scatter Plot of IPv4',
                     ),
                 ]
                 
