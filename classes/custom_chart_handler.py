@@ -13,7 +13,7 @@ class CustomChartHandler:
         
 
         if dataset == 'ipv4':
-            print(dataset, 'cust chart handler dataset conditional')
+            #print(dataset, 'cust chart handler dataset conditional')
             if active_item == 'TEST':
                 #print(active_item, 'cust chart handler active item conditional')
                 df = pd.DataFrame(virtual_row_data)

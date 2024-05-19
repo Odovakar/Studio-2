@@ -169,10 +169,10 @@ def update_choropleth_map(ipv4_dataset, active_tab, active_item, switch_on, allo
     #print(active_item)
     active_dataset = None
     # Debug prints
-    print(f"allocation_version: {allocation_version}")
-    print(f"active_item: {active_item}")
-    print(f"active_tab: {active_tab}")
-    print(f"dataset: {ipv4_dataset}")
+    # print(f"allocation_version: {allocation_version}")
+    # print(f"active_item: {active_item}")
+    # print(f"active_tab: {active_tab}")
+    # print(f"dataset: {ipv4_dataset}")
     #if allocation_version['allocation_type'] == 'ipv4':
     if allocation_version['allocation_type'] == 'ipv4':
         if active_item in ['normal','log']:
@@ -365,16 +365,18 @@ def update_bar_active_item_store(bar_active_item, active_tab):
      Input('ipv4-dataset', 'data'),
      Input('whois-ipv4-dataset', 'data'),
      Input('ipv6-dataset', 'data'),
+     Input('v4v6-button-store', 'data'),
      Input('graph-tabs', 'value'),
      Input('custom-graph-accordion', 'active_item'),
      Input('switch', 'value')]
 )
-def update_custom_graph(virtual_row_data, ipv4_data, whois_ipv4_data, ipv6_data, active_tab, active_item, switch_on):
+def update_custom_graph(virtual_row_data, ipv4_data, whois_ipv4_data, ipv6_data, allocation_version, active_tab, active_item, switch_on):
     if active_tab != 'custom-tab':
         raise dash.exceptions.PreventUpdate
     if ipv4_data == None:
         print('dataset none')
 
+    print(allocation_version)
     #print(ipv4_data) 
     #print(active_tab, 'cust graph callback') this is good
     active_dataset = None
@@ -433,7 +435,7 @@ def update_columns(switch_value, ipv4_data, whois_ipv4_data, ipv6_data, allocati
         else:
             row_data = ag_grid_handler.format_json_data_for_aggrid()
             column_defs = ag_grid_handler.generate_column_definitions('v6_pool')
-            print(column_defs)
+            #print(column_defs)
 
     return row_data, column_defs
 
@@ -579,8 +581,8 @@ def update_view_mode(top10_clicks, bottom10_clicks, current_view_mode):
     prevent_initial_call=True
 )
 def toggle_log_scale(n_clicks, log_scale_state):
-    print(f'Log scale toggle button clicks: {n_clicks}')
-    print(f'Current log scale state from store: {log_scale_state}')
+    #print(f'Log scale toggle button clicks: {n_clicks}')
+    #print(f'Current log scale state from store: {log_scale_state}')
 
     if n_clicks is None:
         raise dash.exceptions.PreventUpdate
@@ -634,7 +636,7 @@ def update_v4v6_view_mode(n_whoisv4, n_whoisv6, current_allocation_type):
     pool_data_text = 'IPv4 Pool Data' if new_allocation_type == 'ipv4' else 'IPv6 Pool Data'
     whois_data_text = 'IPv4 WHOIS Data' if new_allocation_type == 'ipv4' else 'IPv6 WHOIS Data'
 
-    print(new_version_view)
+    #print(new_version_view)
     return new_version_view, whoisv4_button, whoisv6_button, pool_data_text, whois_data_text
 
 
